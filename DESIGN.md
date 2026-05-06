@@ -3,32 +3,32 @@ version: alpha
 name: OpenGeoMetadata Viewer
 description: A lightweight, map-first design system for a configurable geospatial discovery frontend that can be branded by institutions and deployed as a static site.
 colors:
-  primary: "#003C5B"
-  secondary: "#2563EB"
-  tertiary: "#C26B2B"
-  neutral: "#F7FAFC"
-  surface: "#FFFFFF"
-  surface-subtle: "#E6EEF3"
-  on-surface: "#10212E"
-  muted: "#5F6E7D"
-  border: "#D5DEE6"
-  success: "#0F766E"
-  warning: "#B45309"
-  error: "#B91C1C"
-  on-primary: "#FFFFFF"
+  primary: '#111111'
+  secondary: '#0057B8'
+  tertiary: '#D52B1E'
+  neutral: '#F6F0D8'
+  surface: '#FFFDF3'
+  surface-subtle: '#F6D94D'
+  on-surface: '#141414'
+  muted: '#5A5547'
+  border: '#1E1E1E'
+  success: '#0F766E'
+  warning: '#B45309'
+  error: '#B91C1C'
+  on-primary: '#FFFFFF'
 typography:
   headline-lg:
     fontFamily: Work Sans
     fontSize: 40px
     fontWeight: 700
     lineHeight: 1.1
-    letterSpacing: -0.02em
+    letterSpacing: 0
   headline-md:
     fontFamily: Work Sans
     fontSize: 28px
     fontWeight: 600
     lineHeight: 1.2
-    letterSpacing: -0.01em
+    letterSpacing: 0
   body-lg:
     fontFamily: Work Sans
     fontSize: 18px
@@ -67,38 +67,38 @@ spacing:
   md: 16px
   lg: 24px
   xl: 32px
-  "2xl": 48px
+  '2xl': 48px
   gutter: 24px
   content-max: 1280px
 components:
   button-primary:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.on-primary}"
-    typography: "{typography.label-md}"
-    rounded: "{rounded.md}"
+    backgroundColor: '{colors.primary}'
+    textColor: '{colors.on-primary}'
+    typography: '{typography.label-md}'
+    rounded: '{rounded.md}'
     padding: 12px
   button-secondary:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.primary}"
-    typography: "{typography.label-md}"
-    rounded: "{rounded.md}"
+    backgroundColor: '{colors.surface}'
+    textColor: '{colors.primary}'
+    typography: '{typography.label-md}'
+    rounded: '{rounded.md}'
     padding: 12px
   card-default:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.on-surface}"
-    rounded: "{rounded.lg}"
+    backgroundColor: '{colors.surface}'
+    textColor: '{colors.on-surface}'
+    rounded: '{rounded.lg}'
     padding: 24px
   chip-filter:
-    backgroundColor: "{colors.surface-subtle}"
-    textColor: "{colors.on-surface}"
-    typography: "{typography.label-sm}"
-    rounded: "{rounded.full}"
+    backgroundColor: '{colors.surface-subtle}'
+    textColor: '{colors.on-surface}'
+    typography: '{typography.label-sm}'
+    rounded: '{rounded.full}'
     padding: 8px
   search-field:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.on-surface}"
-    typography: "{typography.body-md}"
-    rounded: "{rounded.md}"
+    backgroundColor: '{colors.surface}'
+    textColor: '{colors.on-surface}'
+    typography: '{typography.body-md}'
+    rounded: '{rounded.md}'
     height: 48px
 ---
 
@@ -114,19 +114,22 @@ Institution pilots may also introduce official web typography, utility navigatio
 
 ## Colors
 
-The palette is anchored by a deep cartographic blue and a clean neutral foundation.
+The default OpenGeoMetadata theme uses a Bauhaus-inspired starter palette:
+black structure, warm paper, and disciplined red, blue, and yellow accents.
+This should feel geometric and instructional without turning the discovery
+interface into a poster.
 
-- **Primary (#003C5B):** The institutional anchor. Use it for the site lockup, primary actions, active map-related emphasis, and trusted navigation surfaces.
-- **Secondary (#2563EB):** Interaction blue for focus rings, active states, selected filters, and links that need more energy than the primary color alone.
-- **Tertiary (#C26B2B):** A restrained warm accent for editorial highlights, collection spotlights, and occasional supporting emphasis. Do not let it overtake the core product chrome.
-- **Neutral (#F7FAFC):** The page foundation. It should keep the interface bright, quiet, and easy to scan during long research sessions.
-- **Surface (#FFFFFF):** The primary card and panel surface.
-- **Surface-Subtle (#E6EEF3):** Soft containers for chips, secondary panels, and low-emphasis framing.
-- **On-Surface (#10212E):** Default text color. Strong enough for dense metadata and table content.
-- **Muted (#5F6E7D):** Supporting metadata, labels, and quiet UI.
-- **Border (#D5DEE6):** Primary border and divider color. Use borders liberally to organize information without leaning on heavy shadows.
+- **Primary (#111111):** The structural anchor. Use it for site lockups, primary actions, strong dividers, and trusted navigation surfaces.
+- **Secondary (#0057B8):** Interaction blue for focus rings, active states, selected filters, and links that need more energy than the primary color alone.
+- **Tertiary (#D52B1E):** A direct red accent for hero panels, editorial highlights, collection spotlights, and occasional supporting emphasis. Do not let it overtake the core product chrome.
+- **Neutral (#F6F0D8):** The warm page foundation. It should keep the interface bright, legible, and clearly distinct from institution-specific examples.
+- **Surface (#FFFDF3):** The primary card and panel surface.
+- **Surface-Subtle (#F6D94D):** A yellow accent surface for small moments of emphasis. Use sparingly in dense research views.
+- **On-Surface (#141414):** Default text color. Strong enough for dense metadata and table content.
+- **Muted (#5A5547):** Supporting metadata, labels, and quiet UI.
+- **Border (#1E1E1E):** Primary border and divider color. Use strong lines carefully to organize information without making the UI feel heavy.
 
-Institution-specific themes may swap the brand colors, but the role structure should remain stable: one anchor brand color, one energetic interactive accent, and a predominantly neutral reading environment.
+Institution-specific themes may swap the brand colors, but the role structure should remain stable: one anchor brand color, one energetic interactive accent, and a predominantly neutral reading environment. BTAA and other institutional examples can remain calmer than the starter theme when their brand systems call for it.
 
 ## Typography
 

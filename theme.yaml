@@ -1,657 +1,205 @@
-default_theme: "unr"
-
-themes:
-  unr:
-    label: "University of Nevada, Reno"
-    site:
-      title:
-        en: "University of Nevada, Reno Geoportal"
-      short_name: "University Libraries"
+id: opengeometadata
+label: OpenGeoMetadata
+site:
+  title:
+    en: OpenGeoMetadata Geoportal
+  short_name: OpenGeoMetadata
+  description:
+    en: A configurable geospatial discovery site for a fictitious OpenGeoMetadata institution.
+  canonical_url: https://example.org
+  locale: en
+  supported_locales:
+    - en
+  show_locale_selector: false
+  show_theme_selector: true
+  routing:
+    mode: browser
+  manifest:
+    display: standalone
+    background_color: '#F6F0D8'
+    theme_color: '#111111'
+institution:
+  name: OpenGeoMetadata
+  logo_url: /opengeometadata-bauhaus-logo.svg
+  logo_alt:
+    en: OpenGeoMetadata geometric logo
+  logo_lockup:
+    separator: pipe
+    right_text:
+      en: OpenGeoMetadata
+    right_text_style:
+      font_family: '"Work Sans", Futura, "Avenir Next", Arial, sans-serif'
+      font_weight: 800
+      letter_spacing: '0'
+    subtext:
+      en: Geospatial Discovery School
+    subtext_style:
+      font_family: '"Work Sans", Futura, "Avenir Next", Arial, sans-serif'
+      font_weight: 700
+      letter_spacing: 0.16em
+  header:
+    logo_height_rem: 4.25
+    lockup_gap_rem: 0.85
+    lockup_separator_height_rem: 3.25
+    lockup_text_size_rem: 1.85
+  hero_text:
+    en: Search maps and data through a precise, modular discovery studio.
+  hero_description:
+    en: This default theme is intentionally fictitious so new adopters can start from a clean, branded example before comparing the institutional variations in themes/.
+branding:
+  colors:
+    primary: '#111111'
+    active: '#0057B8'
+    surface: '#FFFDF3'
+    surface_alt: '#F6D94D'
+    text: '#141414'
+    muted: '#5A5547'
+    border: '#1E1E1E'
+    page_background: '#F6F0D8'
+    header_background: '#FFFDF3'
+    header_text: '#111111'
+    utility_background: '#111111'
+    utility_text: 'rgba(255, 253, 243, 0.94)'
+    hero_panel_background: 'rgba(255, 253, 243, 0.92)'
+    hero_panel_accent: '#D52B1E'
+    footer_overlay: 'rgba(17, 17, 17, 0.9)'
+    footer_panel_background: 'rgba(246, 217, 77, 0.14)'
+    button_primary_hover: '#D52B1E'
+    button_secondary_background: '#FFFDF3'
+    button_secondary_hover: '#F6D94D'
+    button_secondary_text: '#111111'
+    button_secondary_border: '#111111'
+    lockup_background: '#F6D94D'
+    lockup_foreground: '#111111'
+  fonts:
+    sans: '"Work Sans", Futura, "Avenir Next", Arial, sans-serif'
+    heading: '"Work Sans", Futura, "Avenir Next", Arial, sans-serif'
+    ui: '"Work Sans", Futura, "Avenir Next", Arial, sans-serif'
+api:
+  base_url: https://lib-btaageoapi-dev-app-01.oit.umn.edu/api/v1
+  search_path: /search
+  suggest_path: /suggest
+  gazetteer_search_path: /gazetteers/nominatim/search
+  facets_path_template: /search/facets/{facetName}
+  map_h3_path: /map/h3
+  home_blog_posts_path: /home/blog-posts
+  turnstile_status_path: /turnstile/status
+  turnstile_verify_path: /turnstile/verify
+  client_name: opengeometadata-viewer
+  default_query_params: []
+navigation:
+  utility_links:
+    - href: /search?q=
+      label:
+        en: Catalog
+      external: false
+    - href: /map
+      label:
+        en: Spatial View
+      external: false
+  cta:
+    href: /search?q=
+    label:
+      en: Search
+    external: false
+  links:
+    - href: /search?q=
+      label:
+        en: Search
+      external: false
+    - href: /map
+      label:
+        en: Map
+      external: false
+    - href: /bookmarks
+      label:
+        en: Bookmarks
+      external: false
+homepage:
+  hero_actions:
+    - href: /search?q=
+      label:
+        en: Search resources
+      external: false
+    - href: /map
+      label:
+        en: Open map
+      external: false
+  featured_items:
+    - id: a10a0f50-994e-0134-2096-0050569601ca-c
+      camera:
+        mode: fitBounds
+        duration: 1.5
+    - id: c69b75a12ca64324a0109d48db735f6d_0
+      camera:
+        mode: flyTo
+        minZoom: 3
+        maxZoom: 10
+        padding:
+          - 24
+          - 24
+        verticalOffsetPx: -120
+        duration: 1
+  collection_spotlights:
+    - title:
+        en: Primary Shapes, Real Places
       description:
-        en: "Search geospatial resources through a University of Nevada, Reno pilot interface powered by the BTAA Geospatial API."
-      canonical_url: "https://www.unr.edu"
-      locale: "en"
-      supported_locales:
-        - "en"
-      show_locale_selector: false
-      show_theme_selector: false
-      routing:
-        mode: "browser"
-      manifest:
-        display: "standalone"
-        background_color: "#041E42"
-        theme_color: "#041E42"
-    institution:
-      name: "University of Nevada, Reno Geoportal"
-      logo_url: "/unr-block-n.svg"
-      logo_alt:
-        en: "University of Nevada, Reno Block N"
-      logo_lockup:
-        separator: "pipe"
-        right_text:
-          en: "University of Nevada, Reno"
-        right_text_style:
-          font_family: "\"myriad-pro\", Arial, sans-serif"
-          font_weight: 700
-          letter_spacing: "0.01em"
-        subtext:
-          en: "University Libraries"
-        subtext_style:
-          font_family: "\"myriad-pro-condensed\", \"Arial Narrow\", Arial, sans-serif"
-          font_weight: 700
-          letter_spacing: "0.16em"
-      header:
-        logo_height_rem: 4.5
-        lockup_gap_rem: 1
-        lockup_separator_height_rem: 3.25
-        lockup_text_size_rem: 1.95
-      hero_text:
-        en: "Discover maps, data and spatial scholarship with a Nevada point of view."
-      hero_description:
-        en: "This pilot reimagines the OpenGeoMetadata viewer as a University of Nevada, Reno web property while connecting directly to the live BTAA Geospatial API for search, browse and record discovery."
-    branding:
-      colors:
-        primary: "#041E42"
-        active: "#007AB8"
-        surface: "#FFFFFF"
-        surface_alt: "#ECEEEF"
-        text: "#3A3B3E"
-        muted: "#5D6166"
-        border: "#D1D2D3"
-        page_background: "#F3F5F7"
-        header_background: "#FFFFFF"
-        header_text: "#041E42"
-        utility_background: "#041E42"
-        utility_text: "rgba(255,255,255,0.92)"
-        hero_panel_background: "rgba(255,255,255,0.88)"
-        hero_panel_accent: "#041E42"
-        footer_overlay: "rgba(4,30,66,0.88)"
-        footer_panel_background: "rgba(255,255,255,0.08)"
-        button_primary_hover: "#0B2D5C"
-        button_secondary_hover: "#EEF2F5"
-        button_secondary_text: "#041E42"
-        button_secondary_border: "#B7BCC2"
-        lockup_background: "#FFFFFF"
-        lockup_foreground: "#041E42"
-      fonts:
-        sans: "\"unr-custom\", \"myriad-pro\", Arial, sans-serif"
-        heading: "\"myriad-pro-condensed\", \"Arial Narrow\", Arial, sans-serif"
-        ui: "\"myriad-pro-condensed\", \"Arial Narrow\", Arial, sans-serif"
-      assets:
-        font_stylesheets:
-          - "https://www.unr.edu/Assets/Styles/Fonts/_MainFonts.min.css"
-    api:
-      base_url: "https://lib-btaageoapi-dev-app-01.oit.umn.edu/api/v1"
-      search_path: "/search"
-      suggest_path: "/suggest"
-      gazetteer_search_path: "/gazetteers/nominatim/search"
-      facets_path_template: "/search/facets/{facetName}"
-      map_h3_path: "/map/h3"
-      home_blog_posts_path: "/home/blog-posts"
-      turnstile_status_path: "/turnstile/status"
-      turnstile_verify_path: "/turnstile/verify"
-      client_name: "unr-geoportal"
-      default_query_params: []
-    navigation:
-      utility_links:
-        - href: "https://www.unr.edu/nevada-today"
-          label:
-            en: "News"
-          external: true
-        - href: "https://library.unr.edu/"
-          label:
-            en: "Libraries"
-          external: true
-        - href: "https://maps.unr.edu"
-          label:
-            en: "Campus Map"
-          external: true
-      cta:
-        href: "https://www.unr.edu"
-        label:
-          en: "University Home"
-        external: true
-      links:
-        - href: "/search?q="
-          label:
-            en: "Search"
-          external: false
-        - href: "/map"
-          label:
-            en: "Map"
-          external: false
-        - href: "/bookmarks"
-          label:
-            en: "Bookmarks"
-          external: false
-        - href: "https://library.unr.edu/"
-          label:
-            en: "Research Help"
-          external: true
-    homepage:
-      hero_background_image_url: "https://www.unr.edu/web-team/uploads/facebook-open-graph.jpg"
-      hero_actions:
-        - href: "/search?q="
-          label:
-            en: "Search resources"
-          external: false
-        - href: "https://maps.unr.edu"
-          label:
-            en: "Campus map"
-          external: true
-      featured_items:
-        - id: "a10a0f50-994e-0134-2096-0050569601ca-c"
-          camera:
-            mode: "fitBounds"
-            duration: 1.5
-        - id: "c69b75a12ca64324a0109d48db735f6d_0"
-          camera:
-            mode: "flyTo"
-            minZoom: 3
-            maxZoom: 10
-            padding: [24, 24]
-            verticalOffsetPx: -120
-            duration: 1
-      collection_spotlights:
-        - title:
-            en: "Nevada and the Great Basin"
-          description:
-            en: "Start with Nevada-focused results, regional cartography and western place-based discovery surfaced live from the BTAA Geospatial API."
-          collection_url: "/search?q=Nevada"
-          collection_label:
-            en: "Explore Nevada results"
-          browse_url: "/search?q=Nevada&view=gallery&per_page=20"
-          browse_label:
-            en: "Browse Nevada resources"
-          featured_item_title:
-            en: "Nevada-focused geospatial discovery"
-          featured_item_url: "/search?q=Nevada&view=gallery&per_page=20"
-          image_src: "https://www.unr.edu/web-team/uploads/facebook-open-graph.jpg"
-          image_alt:
-            en: "Campus view at the University of Nevada, Reno"
-        - title:
-            en: "Water, fire and land stewardship"
-          description:
-            en: "Use the pilot interface to move from a branded institutional landing page into live watershed, fire and land-use searches without leaving the static frontend."
-          collection_url: "/search?q=watershed"
-          collection_label:
-            en: "Explore watershed results"
-          browse_url: "/search?q=watershed&per_page=20"
-          browse_label:
-            en: "Browse stewardship resources"
-          featured_item_title:
-            en: "Watershed and land-use datasets"
-          featured_item_url: "/search?q=watershed&per_page=20"
-          image_src: "https://www.unr.edu/global/images/unr-stock/CampusImage-FB.jpg"
-          image_alt:
-            en: "University of Nevada, Reno campus scene"
-          reverse: true
-        - title:
-            en: "Historical maps of the American West"
-          description:
-            en: "Blend UNR branding with map-first discovery by jumping directly into historical map searches and gallery browsing from the pilot homepage."
-          collection_url: "/search?q=historical%20map"
-          collection_label:
-            en: "Explore historical map results"
-          browse_url: "/search?q=historical%20map&view=gallery&per_page=20"
-          browse_label:
-            en: "Browse historical maps"
-          featured_item_title:
-            en: "Historical map discovery"
-          featured_item_url: "/search?q=historical%20map&view=gallery&per_page=20"
-          image_src: "/historical-maps-featured.png"
-          image_alt:
-            en: "Historical map illustration"
-      partner_institutions: []
-      blog:
-        enabled: false
-    footer:
-      style: "photo"
-      title:
-        en: "University Libraries"
-      logo_url: "/unr-block-n.svg"
-      logo_alt:
-        en: "University of Nevada, Reno Block N"
-      logo_href: "https://www.unr.edu"
-      address_lines:
-        - "University of Nevada, Reno"
-        - "University Libraries"
-        - "1664 N. Virginia Street, Reno, NV 89557"
-        - "(775) 784-1110"
-      background_image_url: "https://www.unr.edu/web-team/uploads/site-footer-bg.jpg"
-      link_groups:
-        - title:
-            en: "Connect"
-          links:
-            - href: "https://www.unr.edu/contact"
-              label:
-                en: "Contact"
-              external: true
-            - href: "https://library.unr.edu/"
-              label:
-                en: "University Libraries"
-              external: true
-            - href: "https://maps.unr.edu"
-              label:
-                en: "Campus Map"
-              external: true
-            - href: "https://www.unr.edu/accessibility"
-              label:
-                en: "Accessibility"
-              external: true
-        - title:
-            en: "University"
-          links:
-            - href: "https://www.unr.edu"
-              label:
-                en: "University Homepage"
-              external: true
-            - href: "https://www.unr.edu/nevada-today"
-              label:
-                en: "Nevada Today"
-              external: true
-            - href: "https://www.unr.edu/about"
-              label:
-                en: "About UNR"
-              external: true
-            - href: "https://www.unr.edu/privacy"
-              label:
-                en: "Privacy"
-              external: true
-      copyright:
-        en: "University of Nevada, Reno pilot interface powered by the BTAA Geospatial API."
-      show_api_debug: true
-
-  btaa:
-    label: "Big Ten Academic Alliance (BTAA)"
-    site:
-      title:
-        en: "BTAA Geoportal"
-        es: "Geoportal BTAA"
-      short_name: "BTAA Geoportal"
+        en: Start with historical maps and public datasets to see how a small institution can feature curated searches without changing application code.
+      collection_url: /search?q=historical%20map
+      collection_label:
+        en: Explore historical maps
+      browse_url: /search?q=historical%20map&view=gallery&per_page=20
+      browse_label:
+        en: Browse gallery
+      featured_item_title:
+        en: Historical map discovery
+      featured_item_url: /search?q=historical%20map&view=gallery&per_page=20
+      image_src: /historical-maps-featured.png
+      image_alt:
+        en: Historical map illustration
+    - title:
+        en: Modular Urban Layers
       description:
-        en: "Search geospatial resources from the Big Ten Academic Alliance and the OpenGeoMetadata community."
-        es: "Busque recursos geoespaciales de la Big Ten Academic Alliance y la comunidad OpenGeoMetadata."
-      canonical_url: "https://geo.btaa.org"
-      locale: "en"
-      supported_locales:
-        - "en"
-        - "es"
-      show_locale_selector: true
-      show_theme_selector: true
-      routing:
-        mode: "browser"
-      manifest:
-        display: "standalone"
-        background_color: "#003C5B"
-        theme_color: "#003C5B"
-    institution:
-      name: "BTAA Geoportal"
-      logo_url: "/btaa-logo.png"
-      logo_alt:
-        en: "BTAA Geoportal logo"
-        es: "Logotipo del Geoportal BTAA"
-      logo_lockup:
-        separator: "pipe"
-        right_text:
-          en: "Geoportal"
-          es: "Geoportal"
-        right_text_style:
-          font_family: "\"Work Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
-      header:
-        logo_height_rem: 5
-        lockup_gap_rem: 0.75
-        lockup_separator_height_rem: 3.5
-        lockup_text_size_rem: 2
-      hero_text:
-        en: "Search geospatial resources from the Big Ten Academic Alliance and the OpenGeoMetadata community."
-        es: "Busque recursos geoespaciales de la Big Ten Academic Alliance y la comunidad OpenGeoMetadata."
-      hero_description:
-        en: "Browse and download GIS data, maps, and other geospatial resources."
-        es: "Explore y descargue datos SIG, mapas y otros recursos geoespaciales."
-    branding:
-      colors:
-        primary: "#003C5B"
-        active: "#2563EB"
-      fonts:
-        sans: "\"Work Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif"
-    api:
-      base_url: "https://lib-btaageoapi-dev-app-01.oit.umn.edu/api/v1"
-      search_path: "/search"
-      suggest_path: "/suggest"
-      gazetteer_search_path: "/gazetteers/nominatim/search"
-      facets_path_template: "/search/facets/{facetName}"
-      map_h3_path: "/map/h3"
-      home_blog_posts_path: "/home/blog-posts"
-      turnstile_status_path: "/turnstile/status"
-      turnstile_verify_path: "/turnstile/verify"
-      client_name: "ogm-viewer"
-      original_record_url_template: "https://geo.btaa.org/catalog/{id}"
-      default_query_params: []
-    navigation:
+        en: Use spotlight blocks to frame the kinds of records your institution wants users to find first, from city basemaps to field data.
+      collection_url: /search?q=urban%20base%20layers
+      collection_label:
+        en: Explore urban layers
+      browse_url: /search?q=urban%20base%20layers&view=gallery&per_page=20
+      browse_label:
+        en: Browse urban layers
+      featured_item_title:
+        en: Urban data discovery
+      featured_item_url: /search?q=urban%20base%20layers&view=gallery&per_page=20
+      image_src: /urban-base-layers-featured.png
+      image_alt:
+        en: Building footprint map illustration
+      reverse: true
+  partner_institutions: []
+  blog:
+    enabled: false
+footer:
+  style: simple
+  title:
+    en: OpenGeoMetadata
+  logo_url: /opengeometadata-bauhaus-logo.svg
+  logo_alt:
+    en: OpenGeoMetadata geometric logo
+  link_groups:
+    - title:
+        en: Explore
       links:
-        - href: "https://gin.btaa.org/about/about-us/"
+        - href: /search?q=
           label:
-            en: "About"
-            es: "Acerca de"
-          external: true
-        - href: "https://geo.btaa.org/feedback"
+            en: Search
+          external: false
+        - href: /map
           label:
-            en: "Feedback"
-            es: "Comentarios"
-          external: true
-        - href: "/bookmarks"
+            en: Map
+          external: false
+        - href: /bookmarks
           label:
-            en: "Bookmarks"
-            es: "Marcadores"
+            en: Bookmarks
           external: false
-    homepage:
-      announcement:
-        enabled: true
-        text:
-          en: "New from BTAA:"
-          es: "Nuevo de BTAA:"
-        link_label:
-          en: "Read GIN News & Stories"
-          es: "Leer noticias e historias de GIN"
-        link_url: "https://gin.btaa.org/blog/"
-      featured_items:
-        - id: "a10a0f50-994e-0134-2096-0050569601ca-c"
-          camera:
-            mode: "fitBounds"
-            duration: 1.5
-        - id: "c69b75a12ca64324a0109d48db735f6d_0"
-          camera:
-            mode: "flyTo"
-            minZoom: 3
-            maxZoom: 10
-            padding: [24, 24]
-            verticalOffsetPx: -120
-            duration: 1
-      collection_spotlights:
-        - title:
-            en: "Sanborn Fire Insurance Maps"
-            es: "Mapas de seguros contra incendios de Sanborn"
-          description:
-            en: "Browse a large, detailed set of Sanborn maps from across the United States. Start with the collection record or jump straight into more than 15,000 indexed map sheets in gallery view."
-            es: "Explore un gran y detallado conjunto de mapas de Sanborn de todo Estados Unidos. Comience con el registro de la colección o pase directamente a más de 15.000 hojas cartográficas indexadas en vista de galería."
-          collection_url: "/resources/b35f927e-9051-4d7f-9ca3-ad5b19024e0b"
-          browse_url: "/search?include_filters[pcdm_memberOf_sm][]=b35f927e-9051-4d7f-9ca3-ad5b19024e0b&view=gallery&per_page=20"
-          browse_label:
-            en: "Browse 15,000+ maps"
-            es: "Explorar mas de 15.000 mapas"
-          featured_item_title:
-            en: "Centralia, Illinois Sanborn map sheet (1924)"
-            es: "Hoja cartografica Sanborn de Centralia, Illinois (1924)"
-          featured_item_url: "/resources/1b831ef0-eed7-0137-6fec-02d0d7bfd6e4-3"
-          image_src: "/sanborn-featured-centralia.png"
-          image_alt:
-            en: "Sanborn map sheet for Centralia, Illinois"
-            es: "Hoja cartografica Sanborn de Centralia, Illinois"
-        - title:
-            en: "Big Ten Academic Alliance Libraries Historical Maps Collection"
-            es: "Coleccion de mapas historicos de las bibliotecas de la Big Ten Academic Alliance"
-          description:
-            en: "Explore historical maps curated from Big Ten Academic Alliance libraries. Use the collection record for context, then browse the full set in gallery mode."
-            es: "Explore mapas historicos seleccionados de las bibliotecas de la Big Ten Academic Alliance. Use el registro de la coleccion para obtener contexto y luego explore el conjunto completo en vista de galeria."
-          collection_url: "/resources/64bd8c4c-8e60-4956-b43d-bdc3f93db488"
-          browse_url: "/search?include_filters[pcdm_memberOf_sm][]=64bd8c4c-8e60-4956-b43d-bdc3f93db488&view=gallery&per_page=20"
-          browse_label:
-            en: "Browse historical maps"
-            es: "Explorar mapas historicos"
-          featured_item_title:
-            en: "Chicago World's Fair pictorial map (1933)"
-            es: "Mapa pictorico de la Feria Mundial de Chicago (1933)"
-          featured_item_url: "/resources/a10a0f50-994e-0134-2096-0050569601ca-c"
-          image_src: "/historical-maps-featured.png"
-          image_alt:
-            en: "Illustrated historical city map from the BTAA historical maps collection"
-            es: "Mapa historico ilustrado de ciudad de la coleccion historica de BTAA"
-          reverse: true
-        - title:
-            en: "Urban Base Layers Collection"
-            es: "Coleccion de capas base urbanas"
-          description:
-            en: "Access foundational urban basemaps and reference layers for city-focused research and planning work across the BTAA Geoportal."
-            es: "Acceda a mapas base urbanos y capas de referencia fundamentales para trabajos de investigacion y planificacion centrados en ciudades en todo el Geoportal BTAA."
-          collection_url: "https://geo.btaa.org/catalog/b1g_urbanBaseLayers"
-          browse_url: "/search?include_filters[pcdm_memberOf_sm][]=b1g_urbanBaseLayers&view=gallery&per_page=20"
-          browse_label:
-            en: "Browse urban base layers"
-            es: "Explorar capas base urbanas"
-          featured_item_title:
-            en: "Building footprints [Pennsylvania--Philadelphia] {2025}"
-            es: "Huella de edificios [Pennsylvania--Philadelphia] {2025}"
-          featured_item_url: "/resources/b1g_cUc3IBtJNisJ"
-          image_src: "/urban-base-layers-featured.png"
-          image_alt:
-            en: "Building footprints map for Philadelphia, Pennsylvania"
-            es: "Mapa de huellas de edificios de Filadelfia, Pennsylvania"
-      media:
-        enabled: true
-        embed_url: "https://www.youtube.com/embed/p060LdJodXQ?autoplay=1&rel=0"
-        title:
-          en: "Big Ten Academic Alliance video"
-          es: "Video de la Big Ten Academic Alliance"
-        subtitle:
-          en: "Watch the BTAA overview video."
-          es: "Vea el video general de BTAA."
-        button_aria_label:
-          en: "Open Big Ten Academic Alliance video"
-          es: "Abrir video de la Big Ten Academic Alliance"
-        modal_test_id: "btaa-video-modal-overlay"
-      blog:
-        enabled: true
-        title:
-          en: "BTAA-GIN News & Stories"
-          es: "Noticias e historias de BTAA-GIN"
-        subtitle:
-          en: "Program updates, collection highlights, and community stories."
-          es: "Actualizaciones del programa, destacados de colecciones e historias de la comunidad."
-        limit: 6
-        cta_label:
-          en: "View all stories"
-          es: "Ver todas las historias"
-        cta_url: "https://gin.btaa.org/blog/"
-    footer:
-      style: "network"
-      logo_url: "/gin-white.png"
-      logo_alt:
-        en: "Big Ten Academic Alliance Geospatial Information Network"
-        es: "Red de Informacion Geoespacial de la Big Ten Academic Alliance"
-      logo_href: "https://gin.btaa.org"
-      link_groups:
-        - title:
-            en: "About & Help"
-            es: "Acerca de y ayuda"
-          links:
-            - href: "https://gin.btaa.org/about/about-us/"
-              label:
-                en: "About Us"
-                es: "Acerca de nosotros"
-              external: true
-            - href: "https://gin.btaa.org/updates"
-              label:
-                en: "Program Updates"
-                es: "Actualizaciones del programa"
-              external: true
-            - href: "https://geo.btaa.org/feedback"
-              label:
-                en: "Contact Us"
-                es: "Contactenos"
-              external: true
-            - href: "https://gin.btaa.org/guides/"
-              label:
-                en: "Help Guides"
-                es: "Guias de ayuda"
-              external: true
-            - href: "https://gin.btaa.org/tutorials"
-              label:
-                en: "Tutorials"
-                es: "Tutoriales"
-              external: true
-        - title:
-            en: "Policies"
-            es: "Politicas"
-          links:
-            - href: "https://gin.btaa.org/policies/harmful-language"
-              label:
-                en: "Harmful Language Statement"
-                es: "Declaracion sobre lenguaje nocivo"
-              external: true
-            - href: "https://btaa.org/privacy"
-              label:
-                en: "Privacy Statement"
-                es: "Declaracion de privacidad"
-              external: true
-            - href: "https://gin.btaa.org/policies/collection-development"
-              label:
-                en: "Collection Development"
-                es: "Desarrollo de colecciones"
-              external: true
-        - title:
-            en: "Sponsors"
-            es: "Patrocinadores"
-          links:
-            - href: "https://btaa.org/"
-              label:
-                en: "Big Ten Academic Alliance"
-                es: "Big Ten Academic Alliance"
-              external: true
-            - href: "https://gin.btaa.org/"
-              label:
-                en: "BTAA Geospatial Information Network"
-                es: "Red de Informacion Geoespacial BTAA"
-              external: true
-            - href: "https://lib.umn.edu/"
-              label:
-                en: "University of Minnesota Libraries"
-                es: "Bibliotecas de la Universidad de Minnesota"
-              external: true
-      network_title:
-        en: "BTAA Member Libraries"
-        es: "Bibliotecas miembros de BTAA"
-      network_members:
-        - "Indiana University"
-        - "Michigan State University"
-        - "Northwestern University"
-        - "Pennsylvania State University"
-        - "Purdue University"
-        - "Rutgers University"
-        - "The Ohio State University"
-        - "University of Chicago"
-        - "University of Illinois"
-        - "University of Iowa"
-        - "University of Maryland"
-        - "University of Michigan"
-        - "University of Minnesota"
-        - "University of Nebraska-Lincoln"
-        - "University of Oregon"
-        - "University of Washington"
-        - "University of Wisconsin-Madison"
-      copyright:
-        en: "Big Ten Academic Alliance. All rights reserved."
-        es: "Big Ten Academic Alliance. Todos los derechos reservados."
-      original_record_label:
-        en: "View original"
-        es: "Ver original"
-      original_record_url_template: "https://geo.btaa.org/catalog/{id}"
-      show_api_debug: true
-
-  uwmadison:
-    label: "University of Wisconsin-Madison"
-    site:
-      title: "UW-Madison Geoportal"
-      short_name: "UW-Madison Geoportal"
-      description: "Search geospatial resources from the University of Wisconsin-Madison."
-      locale: "en"
-      supported_locales:
-        - "en"
-      show_theme_selector: true
-      routing:
-        mode: "browser"
-      manifest:
-        background_color: "#C5050C"
-        theme_color: "#C5050C"
-    institution:
-      name: "UW-Madison Geoportal"
-      logo_url: "/uw-madison-logo.svg"
-      logo_alt: "UW-Madison Geoportal logo"
-      hero_text: "Search geospatial resources from the University of Wisconsin-Madison and the OpenGeoMetadata community."
-      hero_description: "Browse and download GIS data, maps, and other geospatial resources."
-    branding:
-      colors:
-        primary: "#C5050C"
-        active: "#9B0000"
-      fonts:
-        sans: "\"Work Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif"
-    api:
-      base_url: "https://lib-btaageoapi-dev-app-01.oit.umn.edu/api/v1"
-      search_path: "/search"
-      suggest_path: "/suggest"
-      gazetteer_search_path: "/gazetteers/nominatim/search"
-      facets_path_template: "/search/facets/{facetName}"
-      map_h3_path: "/map/h3"
-      home_blog_posts_path: "/home/blog-posts"
-      turnstile_status_path: "/turnstile/status"
-      turnstile_verify_path: "/turnstile/verify"
-      client_name: "ogm-viewer"
-      default_query_params:
-        - "include_filters[schema_provider_s][]=University of Wisconsin-Madison"
-    navigation:
-      links:
-        - href: "/bookmarks"
-          label: "Bookmarks"
-          external: false
-    footer:
-      style: "simple"
-      show_api_debug: true
-
-  nyu:
-    label: "New York University"
-    site:
-      title: "NYU Spatial Data Repository"
-      short_name: "NYU Spatial Data Repository"
-      description: "Search geospatial resources from New York University."
-      locale: "en"
-      supported_locales:
-        - "en"
-      show_theme_selector: true
-      routing:
-        mode: "browser"
-      manifest:
-        background_color: "#57068C"
-        theme_color: "#57068C"
-    institution:
-      name: "NYU Spatial Data Repository"
-      logo_url: "/nyu-logo.svg"
-      logo_alt: "NYU Spatial Data Repository logo"
-      hero_text: "Search geospatial resources from New York University and the OpenGeoMetadata community."
-      hero_description: "Browse and download GIS data, maps, and other geospatial resources."
-    branding:
-      colors:
-        primary: "#57068C"
-        active: "#8900E1"
-      fonts:
-        sans: "\"Work Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif"
-    api:
-      base_url: "https://lib-btaageoapi-dev-app-01.oit.umn.edu/api/v1"
-      search_path: "/search"
-      suggest_path: "/suggest"
-      gazetteer_search_path: "/gazetteers/nominatim/search"
-      facets_path_template: "/search/facets/{facetName}"
-      map_h3_path: "/map/h3"
-      home_blog_posts_path: "/home/blog-posts"
-      turnstile_status_path: "/turnstile/status"
-      turnstile_verify_path: "/turnstile/verify"
-      client_name: "ogm-viewer"
-      default_query_params:
-        - "include_filters[ogm_repo][]=edu.nyu"
-    navigation:
-      links:
-        - href: "/bookmarks"
-          label: "Bookmarks"
-          external: false
-    footer:
-      style: "simple"
-      show_api_debug: true
+  copyright:
+    en: OpenGeoMetadata fictitious starter theme.
+  show_api_debug: true

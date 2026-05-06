@@ -1,5 +1,11 @@
 import yaml from 'js-yaml';
-import themeYaml from '../../theme.yaml?raw';
+import defaultThemeYaml from '../../theme.yaml?raw';
+
+const themeVariationYamlModules = import.meta.glob('../../themes/*.yaml', {
+  eager: true,
+  import: 'default',
+  query: '?raw',
+}) as Record<string, string>;
 
 export type ThemeId = string;
 export type RouteMode = 'browser' | 'hash';
@@ -77,6 +83,7 @@ export interface ThemeSpotlightCard {
 }
 
 export interface ThemeConfig {
+  id?: ThemeId;
   label?: string;
   site?: {
     title?: LocalizedText;
@@ -243,19 +250,112 @@ const DEFAULT_FONT_STACK =
 const DEFAULT_HEADING_STACK = DEFAULT_FONT_STACK;
 const DEFAULT_UI_STACK = DEFAULT_FONT_STACK;
 
-function parseThemeYaml(raw: string): ThemeRegistryConfig {
-  const parsed = yaml.load(raw);
-  if (!parsed || typeof parsed !== 'object') {
-    throw new Error('Invalid theme.yaml: expected an object at top-level');
-  }
-  const cfg = parsed as ThemeRegistryConfig;
-  if (!cfg.themes || typeof cfg.themes !== 'object') {
-    throw new Error('Invalid theme.yaml: expected `themes` map');
-  }
-  return cfg;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-const registry = parseThemeYaml(themeYaml);
+function looksLikeThemeConfig(value: unknown): value is ThemeConfig {
+  return isRecord(value) && isRecord(value.institution) && isRecord(value.api);
+}
+
+function modulePathToThemeId(path: string): ThemeId {
+  const match = path.match(/\/([^/]+)\.ya?ml$/);
+  return match?.[1] || 'default';
+}
+
+function withThemeId(themeId: ThemeId, theme: ThemeConfig): ThemeConfig {
+  return {
+    ...theme,
+    id: theme.id || themeId,
+  };
+}
+
+function parseThemeYaml(
+  raw: string,
+  source = 'theme.yaml',
+  fallbackThemeId: ThemeId = 'default'
+): ThemeRegistryConfig {
+  const parsed = yaml.load(raw);
+  if (!isRecord(parsed)) {
+    throw new Error(`Invalid ${source}: expected an object at top-level`);
+  }
+
+  if (isRecord(parsed.themes)) {
+    const themes: Record<ThemeId, ThemeConfig> = {};
+    Object.entries(parsed.themes).forEach(([themeId, theme]) => {
+      if (!looksLikeThemeConfig(theme)) {
+        throw new Error(
+          `Invalid ${source}: expected theme "${themeId}" to define institution and api`
+        );
+      }
+      themes[themeId] = withThemeId(themeId, theme);
+    });
+
+    return {
+      default_theme:
+        typeof parsed.default_theme === 'string'
+          ? parsed.default_theme
+          : undefined,
+      themes,
+    };
+  }
+
+  if (looksLikeThemeConfig(parsed)) {
+    const themeId = typeof parsed.id === 'string' ? parsed.id : fallbackThemeId;
+    return {
+      default_theme: themeId,
+      themes: {
+        [themeId]: withThemeId(themeId, parsed),
+      },
+    };
+  }
+
+  const entries = Object.entries(parsed);
+  if (entries.length === 1) {
+    const [themeId, theme] = entries[0];
+    if (looksLikeThemeConfig(theme)) {
+      return {
+        default_theme: themeId,
+        themes: {
+          [themeId]: withThemeId(themeId, theme),
+        },
+      };
+    }
+  }
+
+  throw new Error(
+    `Invalid ${source}: expected a single theme object, one theme entry, or a themes map`
+  );
+}
+
+function buildThemeRegistry(
+  defaultThemeRaw: string,
+  variationModules: Record<string, string>
+): ThemeRegistryConfig {
+  const registry = parseThemeYaml(defaultThemeRaw);
+  const themes = { ...registry.themes };
+
+  Object.entries(variationModules)
+    .sort(([leftPath], [rightPath]) => leftPath.localeCompare(rightPath))
+    .forEach(([path, raw]) => {
+      const variationRegistry = parseThemeYaml(
+        raw,
+        path,
+        modulePathToThemeId(path)
+      );
+      Object.assign(themes, variationRegistry.themes);
+    });
+
+  return {
+    default_theme: registry.default_theme || Object.keys(themes)[0],
+    themes,
+  };
+}
+
+const registry = buildThemeRegistry(
+  defaultThemeYaml,
+  themeVariationYamlModules
+);
 
 function safeReadLocalStorage(key: string): string | null {
   try {
@@ -288,13 +388,19 @@ function safeWriteCookie(key: string, value: string): void {
   }
 }
 
-function normalizeHexColor(value: string | undefined, fallback: string): string {
+function normalizeHexColor(
+  value: string | undefined,
+  fallback: string
+): string {
   if (!value || typeof value !== 'string') return fallback;
   const normalized = value.trim();
   return normalized || fallback;
 }
 
-function normalizeCssValue(value: string | undefined, fallback: string): string {
+function normalizeCssValue(
+  value: string | undefined,
+  fallback: string
+): string {
   if (!value || typeof value !== 'string') return fallback;
   const normalized = value.trim();
   return normalized || fallback;
@@ -311,17 +417,21 @@ function hexToRgbChannels(value: string | undefined, fallback: string): string {
       : color;
 
   if (!/^[0-9a-fA-F]{6}$/.test(expanded)) {
-    return fallback
-      .replace('#', '')
-      .match(/.{1,2}/g)
-      ?.map((part) => parseInt(part, 16))
-      .join(' ') || '0 60 91';
+    return (
+      fallback
+        .replace('#', '')
+        .match(/.{1,2}/g)
+        ?.map((part) => parseInt(part, 16))
+        .join(' ') || '0 60 91'
+    );
   }
 
-  return expanded
-    .match(/.{1,2}/g)
-    ?.map((part) => parseInt(part, 16))
-    .join(' ') || '0 60 91';
+  return (
+    expanded
+      .match(/.{1,2}/g)
+      ?.map((part) => parseInt(part, 16))
+      .join(' ') || '0 60 91'
+  );
 }
 
 function setCssVariable(name: string, value: string | undefined) {
@@ -387,7 +497,9 @@ export function getThemeConfig(themeId: ThemeId): ThemeConfig {
 
 export function getThemeLabel(themeId: ThemeId): string {
   const theme = getThemeConfig(themeId);
-  return theme.label || theme.site?.short_name || theme.institution?.name || themeId;
+  return (
+    theme.label || theme.site?.short_name || theme.institution?.name || themeId
+  );
 }
 
 export function getAvailableThemes(): Array<{ id: ThemeId; label: string }> {

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">OpenGeoMetadata geometric logo</title>
+  <desc id="desc">A Bauhaus-inspired arrangement of geometric map forms.</desc>
+  <rect width="256" height="256" fill="#fffdf3"/>
+  <rect x="16" y="16" width="96" height="96" fill="#f6d94d"/>
+  <circle cx="176" cy="64" r="48" fill="#d52b1e"/>
+  <path d="M64 144 16 240h96z" fill="#0057b8"/>
+  <rect x="144" y="144" width="96" height="96" fill="#111111"/>
+  <path d="M144 144h96v96" fill="none" stroke="#fffdf3" stroke-width="12"/>
+  <path d="M32 64h64M64 32v64M160 64h32M176 48v32M48 192h32M64 176v32M176 176h32M176 208h32" fill="none" stroke="#111111" stroke-linecap="square" stroke-width="8"/>
+</svg>

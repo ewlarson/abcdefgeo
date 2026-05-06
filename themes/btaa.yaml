@@ -1,0 +1,297 @@
+id: btaa
+label: Big Ten Academic Alliance (BTAA)
+site:
+  title:
+    en: BTAA Geoportal
+    es: Geoportal BTAA
+  short_name: BTAA Geoportal
+  description:
+    en: Search geospatial resources from the Big Ten Academic Alliance and the OpenGeoMetadata community.
+    es: Busque recursos geoespaciales de la Big Ten Academic Alliance y la comunidad OpenGeoMetadata.
+  canonical_url: https://geo.btaa.org
+  locale: en
+  supported_locales:
+    - en
+    - es
+  show_locale_selector: true
+  show_theme_selector: true
+  routing:
+    mode: browser
+  manifest:
+    display: standalone
+    background_color: '#003C5B'
+    theme_color: '#003C5B'
+institution:
+  name: BTAA Geoportal
+  logo_url: /btaa-logo.png
+  logo_alt:
+    en: BTAA Geoportal logo
+    es: Logotipo del Geoportal BTAA
+  logo_lockup:
+    separator: pipe
+    right_text:
+      en: Geoportal
+      es: Geoportal
+    right_text_style:
+      font_family: '"Work Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+  header:
+    logo_height_rem: 5
+    lockup_gap_rem: 0.75
+    lockup_separator_height_rem: 3.5
+    lockup_text_size_rem: 2
+  hero_text:
+    en: Search geospatial resources from the Big Ten Academic Alliance and the OpenGeoMetadata community.
+    es: Busque recursos geoespaciales de la Big Ten Academic Alliance y la comunidad OpenGeoMetadata.
+  hero_description:
+    en: Browse and download GIS data, maps, and other geospatial resources.
+    es: Explore y descargue datos SIG, mapas y otros recursos geoespaciales.
+branding:
+  colors:
+    primary: '#003C5B'
+    active: '#2563EB'
+  fonts:
+    sans: '"Work Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+api:
+  base_url: https://lib-btaageoapi-dev-app-01.oit.umn.edu/api/v1
+  search_path: /search
+  suggest_path: /suggest
+  gazetteer_search_path: /gazetteers/nominatim/search
+  facets_path_template: /search/facets/{facetName}
+  map_h3_path: /map/h3
+  home_blog_posts_path: /home/blog-posts
+  turnstile_status_path: /turnstile/status
+  turnstile_verify_path: /turnstile/verify
+  client_name: ogm-viewer
+  original_record_url_template: https://geo.btaa.org/catalog/{id}
+  default_query_params: []
+navigation:
+  links:
+    - href: https://gin.btaa.org/about/about-us/
+      label:
+        en: About
+        es: Acerca de
+      external: true
+    - href: https://geo.btaa.org/feedback
+      label:
+        en: Feedback
+        es: Comentarios
+      external: true
+    - href: /bookmarks
+      label:
+        en: Bookmarks
+        es: Marcadores
+      external: false
+homepage:
+  announcement:
+    enabled: true
+    text:
+      en: 'New from BTAA:'
+      es: 'Nuevo de BTAA:'
+    link_label:
+      en: Read GIN News & Stories
+      es: Leer noticias e historias de GIN
+    link_url: https://gin.btaa.org/blog/
+  featured_items:
+    - id: a10a0f50-994e-0134-2096-0050569601ca-c
+      camera:
+        mode: fitBounds
+        duration: 1.5
+    - id: c69b75a12ca64324a0109d48db735f6d_0
+      camera:
+        mode: flyTo
+        minZoom: 3
+        maxZoom: 10
+        padding:
+          - 24
+          - 24
+        verticalOffsetPx: -120
+        duration: 1
+  collection_spotlights:
+    - title:
+        en: Sanborn Fire Insurance Maps
+        es: Mapas de seguros contra incendios de Sanborn
+      description:
+        en: Browse a large, detailed set of Sanborn maps from across the United States. Start with the collection record or jump straight into more than 15,000 indexed map sheets in gallery view.
+        es: Explore un gran y detallado conjunto de mapas de Sanborn de todo Estados Unidos. Comience con el registro de la colección o pase directamente a más de 15.000 hojas cartográficas indexadas en vista de galería.
+      collection_url: /resources/b35f927e-9051-4d7f-9ca3-ad5b19024e0b
+      browse_url: /search?include_filters[pcdm_memberOf_sm][]=b35f927e-9051-4d7f-9ca3-ad5b19024e0b&view=gallery&per_page=20
+      browse_label:
+        en: Browse 15,000+ maps
+        es: Explorar mas de 15.000 mapas
+      featured_item_title:
+        en: Centralia, Illinois Sanborn map sheet (1924)
+        es: Hoja cartografica Sanborn de Centralia, Illinois (1924)
+      featured_item_url: /resources/1b831ef0-eed7-0137-6fec-02d0d7bfd6e4-3
+      image_src: /sanborn-featured-centralia.png
+      image_alt:
+        en: Sanborn map sheet for Centralia, Illinois
+        es: Hoja cartografica Sanborn de Centralia, Illinois
+    - title:
+        en: Big Ten Academic Alliance Libraries Historical Maps Collection
+        es: Coleccion de mapas historicos de las bibliotecas de la Big Ten Academic Alliance
+      description:
+        en: Explore historical maps curated from Big Ten Academic Alliance libraries. Use the collection record for context, then browse the full set in gallery mode.
+        es: Explore mapas historicos seleccionados de las bibliotecas de la Big Ten Academic Alliance. Use el registro de la coleccion para obtener contexto y luego explore el conjunto completo en vista de galeria.
+      collection_url: /resources/64bd8c4c-8e60-4956-b43d-bdc3f93db488
+      browse_url: /search?include_filters[pcdm_memberOf_sm][]=64bd8c4c-8e60-4956-b43d-bdc3f93db488&view=gallery&per_page=20
+      browse_label:
+        en: Browse historical maps
+        es: Explorar mapas historicos
+      featured_item_title:
+        en: Chicago World's Fair pictorial map (1933)
+        es: Mapa pictorico de la Feria Mundial de Chicago (1933)
+      featured_item_url: /resources/a10a0f50-994e-0134-2096-0050569601ca-c
+      image_src: /historical-maps-featured.png
+      image_alt:
+        en: Illustrated historical city map from the BTAA historical maps collection
+        es: Mapa historico ilustrado de ciudad de la coleccion historica de BTAA
+      reverse: true
+    - title:
+        en: Urban Base Layers Collection
+        es: Coleccion de capas base urbanas
+      description:
+        en: Access foundational urban basemaps and reference layers for city-focused research and planning work across the BTAA Geoportal.
+        es: Acceda a mapas base urbanos y capas de referencia fundamentales para trabajos de investigacion y planificacion centrados en ciudades en todo el Geoportal BTAA.
+      collection_url: https://geo.btaa.org/catalog/b1g_urbanBaseLayers
+      browse_url: /search?include_filters[pcdm_memberOf_sm][]=b1g_urbanBaseLayers&view=gallery&per_page=20
+      browse_label:
+        en: Browse urban base layers
+        es: Explorar capas base urbanas
+      featured_item_title:
+        en: Building footprints [Pennsylvania--Philadelphia] {2025}
+        es: Huella de edificios [Pennsylvania--Philadelphia] {2025}
+      featured_item_url: /resources/b1g_cUc3IBtJNisJ
+      image_src: /urban-base-layers-featured.png
+      image_alt:
+        en: Building footprints map for Philadelphia, Pennsylvania
+        es: Mapa de huellas de edificios de Filadelfia, Pennsylvania
+  media:
+    enabled: true
+    embed_url: https://www.youtube.com/embed/p060LdJodXQ?autoplay=1&rel=0
+    title:
+      en: Big Ten Academic Alliance video
+      es: Video de la Big Ten Academic Alliance
+    subtitle:
+      en: Watch the BTAA overview video.
+      es: Vea el video general de BTAA.
+    button_aria_label:
+      en: Open Big Ten Academic Alliance video
+      es: Abrir video de la Big Ten Academic Alliance
+    modal_test_id: btaa-video-modal-overlay
+  blog:
+    enabled: true
+    title:
+      en: BTAA-GIN News & Stories
+      es: Noticias e historias de BTAA-GIN
+    subtitle:
+      en: Program updates, collection highlights, and community stories.
+      es: Actualizaciones del programa, destacados de colecciones e historias de la comunidad.
+    limit: 6
+    cta_label:
+      en: View all stories
+      es: Ver todas las historias
+    cta_url: https://gin.btaa.org/blog/
+footer:
+  style: network
+  logo_url: /gin-white.png
+  logo_alt:
+    en: Big Ten Academic Alliance Geospatial Information Network
+    es: Red de Informacion Geoespacial de la Big Ten Academic Alliance
+  logo_href: https://gin.btaa.org
+  link_groups:
+    - title:
+        en: About & Help
+        es: Acerca de y ayuda
+      links:
+        - href: https://gin.btaa.org/about/about-us/
+          label:
+            en: About Us
+            es: Acerca de nosotros
+          external: true
+        - href: https://gin.btaa.org/updates
+          label:
+            en: Program Updates
+            es: Actualizaciones del programa
+          external: true
+        - href: https://geo.btaa.org/feedback
+          label:
+            en: Contact Us
+            es: Contactenos
+          external: true
+        - href: https://gin.btaa.org/guides/
+          label:
+            en: Help Guides
+            es: Guias de ayuda
+          external: true
+        - href: https://gin.btaa.org/tutorials
+          label:
+            en: Tutorials
+            es: Tutoriales
+          external: true
+    - title:
+        en: Policies
+        es: Politicas
+      links:
+        - href: https://gin.btaa.org/policies/harmful-language
+          label:
+            en: Harmful Language Statement
+            es: Declaracion sobre lenguaje nocivo
+          external: true
+        - href: https://btaa.org/privacy
+          label:
+            en: Privacy Statement
+            es: Declaracion de privacidad
+          external: true
+        - href: https://gin.btaa.org/policies/collection-development
+          label:
+            en: Collection Development
+            es: Desarrollo de colecciones
+          external: true
+    - title:
+        en: Sponsors
+        es: Patrocinadores
+      links:
+        - href: https://btaa.org/
+          label:
+            en: Big Ten Academic Alliance
+            es: Big Ten Academic Alliance
+          external: true
+        - href: https://gin.btaa.org/
+          label:
+            en: BTAA Geospatial Information Network
+            es: Red de Informacion Geoespacial BTAA
+          external: true
+        - href: https://lib.umn.edu/
+          label:
+            en: University of Minnesota Libraries
+            es: Bibliotecas de la Universidad de Minnesota
+          external: true
+  network_title:
+    en: BTAA Member Libraries
+    es: Bibliotecas miembros de BTAA
+  network_members:
+    - Indiana University
+    - Michigan State University
+    - Northwestern University
+    - Pennsylvania State University
+    - Purdue University
+    - Rutgers University
+    - The Ohio State University
+    - University of Chicago
+    - University of Illinois
+    - University of Iowa
+    - University of Maryland
+    - University of Michigan
+    - University of Minnesota
+    - University of Nebraska-Lincoln
+    - University of Oregon
+    - University of Washington
+    - University of Wisconsin-Madison
+  copyright:
+    en: Big Ten Academic Alliance. All rights reserved.
+    es: Big Ten Academic Alliance. Todos los derechos reservados.
+  original_record_label:
+    en: View original
+    es: Ver original
+  original_record_url_template: https://geo.btaa.org/catalog/{id}
+  show_api_debug: true

@@ -12,7 +12,7 @@ The core product goal is simple:
 - localization over hardcoded copy
 - static hosting over custom app infrastructure
 
-Preserve BTAA behavior as the reference preset, but make new institutional deployments possible through `theme.yaml` and small, documented configuration changes.
+Preserve BTAA behavior as the reference preset, but make new institutional deployments possible through the default `theme.yaml`, optional `themes/*.yaml` variations, and small, documented configuration changes.
 
 ## What To Optimize For
 
@@ -30,7 +30,8 @@ When you make changes here, bias toward:
 Treat these areas as the primary implementation surface:
 
 - `src/`: the active client-side React/Vite application
-- `theme.yaml`: source of truth for theme, institution, and site configuration
+- `theme.yaml`: source of truth for the default theme, institution, and site configuration
+- `themes/`: one optional theme variation per YAML file
 - `src/config/institution.ts`: theme parsing, storage, and DOM variable application
 - `src/i18n/`: shared UI message catalogs and locale helpers
 - `src/services/api.ts`: direct BTAA Geospatial API client behavior
@@ -49,10 +50,10 @@ Those paths came from the earlier SSR/BFF setup. Do not add new generic product 
 Follow these rules unless the user explicitly asks otherwise:
 
 - Do not hardcode institution names, logos, URLs, or collection scope into generic components.
-- Prefer extending `theme.yaml` over adding `if themeId === "..."` branches.
+- Prefer extending theme configuration over adding `if themeId === "..."` branches.
 - Keep the API contract fixed on the frontend side. If the API makes generalization awkward, document the proposed backend improvement instead of inventing frontend-only magic.
 - Put shared product copy in `src/i18n/messages.ts`.
-- Put institution-specific copy in localized `theme.yaml` fields.
+- Put institution-specific copy in localized theme fields.
 - Keep routes compatible with static hosting. Avoid server-only assumptions, proxy-only URLs, and SSR-only data dependencies.
 - Preserve direct API URL usage for search, assets, suggestions, and record detail flows when possible.
 - Keep BTAA as a first-class preset so this repo remains the reference implementation.
@@ -76,7 +77,7 @@ Follow these rules unless the user explicitly asks otherwise:
 
 ## Config Rules
 
-When you change `theme.yaml` or theme parsing:
+When you change `theme.yaml`, `themes/*.yaml`, or theme parsing:
 
 - preserve backward compatibility when reasonable
 - keep the BTAA example working

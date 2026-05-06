@@ -13,8 +13,9 @@ BTAA as the reference preset.
 
 - Searches and displays geospatial records from the BTAA Geospatial API.
 - Provides search, map, bookmark, and resource detail views.
-- Uses `theme.yaml` for institution branding, navigation, homepage content,
-  API paths, locale settings, and deployment-facing metadata.
+- Uses `theme.yaml` and optional `themes/*.yaml` files for institution
+  branding, navigation, homepage content, API paths, locale settings, and
+  deployment-facing metadata.
 - Supports localized shared UI strings through `src/i18n/`.
 - Builds as static assets that can be hosted on services such as GitHub Pages.
 
@@ -22,7 +23,8 @@ BTAA as the reference preset.
 
 The active application lives in `src/`:
 
-- `src/config/institution.ts` parses `theme.yaml` and applies theme settings.
+- `src/config/institution.ts` parses the default `theme.yaml`, merges optional
+  theme variations from `themes/`, and applies theme settings.
 - `src/services/api.ts` talks directly to the BTAA Geospatial API.
 - `src/i18n/` contains shared message catalogs and locale helpers.
 - `src/components/` and `src/pages/` implement the viewer experience.
@@ -67,11 +69,13 @@ npm run preview
 
 ## Configuration
 
-The main configuration file is `theme.yaml`.
+The main configuration file is `theme.yaml`. It should read like a complete
+starter site for one institution, not a packed list of every example.
 
-The default theme is currently `unr`, a University of Nevada, Reno pilot. The
-`btaa` theme remains the reference preset for BTAA Geoportal behavior and
-localization.
+The default theme is `opengeometadata`, a fictitious OpenGeoMetadata institution
+with a Bauhaus-inspired starter palette. Additional examples live as one theme
+per file in `themes/`, including `themes/btaa.yaml` as the reference preset for
+BTAA Geoportal behavior and localization.
 
 Theme configuration controls:
 
@@ -84,8 +88,10 @@ Theme configuration controls:
 - footer layout, links, institutional address, and copyright text
 - BTAA Geospatial API base URL, endpoint paths, and default query parameters
 
-For new institutional deployments, prefer adding fields to `theme.yaml` over
-hardcoding institution-specific behavior in components.
+For a new institutional deployment, copy `theme.yaml` for a single-site build or
+add a new `themes/<theme-id>.yaml` file when you want it available alongside the
+included examples. Prefer theme fields over hardcoding institution-specific
+behavior in components.
 
 ## Environment Variables
 
@@ -118,23 +124,24 @@ npm run lint            # run ESLint
 npm run lint:fix        # run ESLint with automatic fixes
 npm run format          # run Prettier
 npm run format:check    # check formatting
-npm run scaffold        # create a starter theme snippet
+npm run scaffold        # create a starter themes/<theme-id>.yaml file
 npm run deploy          # publish dist/ with gh-pages
 ```
 
 ## Creating A New Institution Theme
 
-Use the scaffold helper to create a starter theme snippet:
+Use the scaffold helper to create a starter theme file:
 
 ```bash
 npm run scaffold -- my-institution "My Institution"
 ```
 
-The scaffold is written to `/private/tmp/ogm-viewer-scaffolds/` for review and
-copying into `theme.yaml`.
+The scaffold is written to `themes/my-institution.yaml`. The root `theme.yaml`
+is still the simplest copyable example when building a single institution site.
 
 When adding a new theme:
 
+- keep one institution per YAML file
 - keep `btaa` working as the reference implementation
 - keep copy localizable by using localized objects for configurable text
 - use theme fields for institution names, logos, links, colors, and homepage
@@ -158,8 +165,8 @@ npm run deploy
 
 ## Development Notes
 
-- `theme.yaml` is the source of truth for institution branding and deployment
-  configuration.
+- `theme.yaml` is the source of truth for the default institution branding and
+  deployment configuration; `themes/*.yaml` files provide optional variations.
 - Shared UI copy belongs in `src/i18n/messages.ts`.
 - Institution-specific copy should stay in localized theme fields.
 - Generic product work should usually happen in `src/`, not `app/` or `server/`.

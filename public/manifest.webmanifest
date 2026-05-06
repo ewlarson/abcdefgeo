@@ -1,11 +1,11 @@
 {
-  "name": "University of Nevada, Reno Geoportal",
-  "short_name": "University Libraries",
-  "description": "Search geospatial resources through a University of Nevada, Reno pilot interface powered by the BTAA Geospatial API.",
+  "name": "OpenGeoMetadata Geoportal",
+  "short_name": "OpenGeoMetadata",
+  "description": "A configurable geospatial discovery site for a fictitious OpenGeoMetadata institution.",
   "start_url": "/",
   "display": "standalone",
-  "theme_color": "#041E42",
-  "background_color": "#041E42",
+  "theme_color": "#111111",
+  "background_color": "#F6F0D8",
   "icons": [
     {
       "src": "/pwa-64x64.png",
