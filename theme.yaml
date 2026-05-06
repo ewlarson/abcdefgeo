@@ -6,14 +6,14 @@ site:
   short_name: OpenGeoMetadata
   description:
     en: A configurable geospatial discovery site for a fictitious OpenGeoMetadata institution.
-  canonical_url: https://example.org
+  canonical_url: https://ewlarson.github.io/abcdefgeo
   locale: en
   supported_locales:
     - en
   show_locale_selector: false
   show_theme_selector: true
   routing:
-    mode: browser
+    mode: hash
   manifest:
     display: standalone
     background_color: '#F6F0D8'
@@ -76,7 +76,7 @@ branding:
     heading: '"Work Sans", Futura, "Avenir Next", Arial, sans-serif'
     ui: '"Work Sans", Futura, "Avenir Next", Arial, sans-serif'
 api:
-  base_url: https://lib-btaageoapi-dev-app-01.oit.umn.edu/api/v1
+  base_url: https://ogm.geo4lib.app/api/v1/
   search_path: /search
   suggest_path: /suggest
   gazetteer_search_path: /gazetteers/nominatim/search

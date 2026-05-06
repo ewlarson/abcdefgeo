@@ -12,6 +12,7 @@ import { ResourceClassFilterTabs } from '../search/ResourceClassFilterTabs';
 import { useTheme } from '../../hooks/useTheme';
 import { useI18n } from '../../hooks/useI18n';
 import type { ThemeLink } from '../../config/institution';
+import { resolveThemeAssetUrl } from '../../utils/themeUrls';
 
 function renderThemeLink(
   link: ThemeLink,
@@ -61,9 +62,12 @@ export function Header() {
     { href: '/bookmarks', label: t('common.bookmarks'), external: false },
   ];
   const ctaLink = theme.navigation?.cta;
+  const logoUrl = resolveThemeAssetUrl(theme.institution.logo_url);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const navPanelRef = useRef<HTMLDivElement>(null);
-  const headerTextStyle = { color: 'var(--color-header-text)' } as CSSProperties;
+  const headerTextStyle = {
+    color: 'var(--color-header-text)',
+  } as CSSProperties;
 
   useEffect(() => {
     setMobileNavOpen(false);
@@ -211,7 +215,7 @@ export function Header() {
               }
             >
               <img
-                src={theme.institution.logo_url}
+                src={logoUrl}
                 alt={
                   text(theme.institution.logo_alt) ||
                   `${theme.institution.name} logo`

@@ -1,6 +1,6 @@
 {
   "name": "ogm-viewer",
-  "homepage": "https://github.com/geobtaa/api/tree/develop/frontend",
+  "homepage": "https://ewlarson.github.io/abcdefgeo",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -13,8 +13,8 @@
     "scaffold": "node scripts/scaffold-site.mjs",
     "lint": "eslint 'src/**/*.{ts,tsx}' 'scripts/**/*.{js,mjs}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' 'scripts/**/*.{js,mjs}' --fix",
-    "format": "prettier --write 'src/**/*.{ts,tsx,css,md,json}' 'scripts/**/*.{js,mjs}' '*.md' '*.yaml' 'themes/**/*.yaml'",
-    "format:check": "prettier --check 'src/**/*.{ts,tsx,css,md,json}' 'scripts/**/*.{js,mjs}' '*.md' '*.yaml' 'themes/**/*.yaml'",
+    "format": "prettier --write 'src/**/*.{ts,tsx,css,md,json}' 'scripts/**/*.{js,mjs}' 'docs/**/*.md' '*.md' '*.yaml' 'themes/**/*.yaml'",
+    "format:check": "prettier --check 'src/**/*.{ts,tsx,css,md,json}' 'scripts/**/*.{js,mjs}' 'docs/**/*.md' '*.md' '*.yaml' 'themes/**/*.yaml'",
     "preview": "vite preview",
     "deploy": "gh-pages -d dist",
     "test": "vitest",

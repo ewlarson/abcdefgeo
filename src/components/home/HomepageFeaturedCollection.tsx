@@ -1,7 +1,10 @@
+import type { ReactNode } from 'react';
 import { ArrowRight, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router';
 import { primaryCtaClass, secondaryCtaClass } from '../../styles/cta';
 import { useTheme } from '../../hooks/useTheme';
 import { useI18n } from '../../hooks/useI18n';
+import { isAbsoluteUrl, resolveThemeAssetUrl } from '../../utils/themeUrls';
 
 function SpotlightPreview({
   imageSrc,
@@ -18,7 +21,7 @@ function SpotlightPreview({
     <div className="relative min-h-[220px] overflow-hidden bg-slate-900">
       {imageSrc ? (
         <img
-          src={imageSrc}
+          src={resolveThemeAssetUrl(imageSrc)}
           alt={imageAlt || featuredItemTitle}
           className="h-full w-full object-cover"
           loading="lazy"
@@ -39,12 +42,47 @@ function SpotlightPreview({
     return content;
   }
 
+  if (!isAbsoluteUrl(featuredItemUrl) && featuredItemUrl.startsWith('/')) {
+    return (
+      <Link
+        to={featuredItemUrl}
+        className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-active"
+      >
+        {content}
+      </Link>
+    );
+  }
+
   return (
     <a
       href={featuredItemUrl}
       className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-active"
     >
       {content}
+    </a>
+  );
+}
+
+function SpotlightLink({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className: string;
+  children: ReactNode;
+}) {
+  if (!isAbsoluteUrl(href) && href.startsWith('/')) {
+    return (
+      <Link to={href} className={className}>
+        {children}
+      </Link>
+    );
+  }
+
+  return (
+    <a href={href} className={className}>
+      {children}
     </a>
   );
 }
@@ -99,21 +137,21 @@ export function HomepageFeaturedCollection() {
                 {text(spotlight.description)}
               </p>
               <div className="mt-5 flex flex-wrap gap-3">
-                <a
+                <SpotlightLink
                   href={spotlight.collection_url}
                   className={`${secondaryCtaClass} theme-ui uppercase tracking-[0.14em]`}
                 >
                   {text(spotlight.collection_label) ||
                     t('common.viewCollectionRecord')}
                   <ExternalLink className="h-4 w-4" />
-                </a>
-                <a
+                </SpotlightLink>
+                <SpotlightLink
                   href={spotlight.browse_url}
                   className={`${primaryCtaClass} theme-ui uppercase tracking-[0.14em]`}
                 >
                   {text(spotlight.browse_label)}
                   <ArrowRight className="h-4 w-4" />
-                </a>
+                </SpotlightLink>
               </div>
             </div>
           </div>

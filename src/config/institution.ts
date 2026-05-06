@@ -1,5 +1,6 @@
 import yaml from 'js-yaml';
 import defaultThemeYaml from '../../theme.yaml?raw';
+import { resolveThemeAssetUrl } from '../utils/themeUrls';
 
 const themeVariationYamlModules = import.meta.glob('../../themes/*.yaml', {
   eager: true,
@@ -448,6 +449,7 @@ function syncThemeStylesheets(urls: string[] | undefined): void {
       (urls || [])
         .map((url) => url?.trim())
         .filter((url): url is string => !!url)
+        .map((url) => resolveThemeAssetUrl(url) || url)
         .map((url) => new URL(url, document.baseURI).href)
     )
   );
@@ -504,6 +506,12 @@ export function getThemeLabel(themeId: ThemeId): string {
 
 export function getAvailableThemes(): Array<{ id: ThemeId; label: string }> {
   return getThemeIds().map((id) => ({ id, label: getThemeLabel(id) }));
+}
+
+export function isThemeSelectorEnabled(): boolean {
+  return getThemeIds().some(
+    (themeId) => getThemeConfig(themeId).site?.show_theme_selector === true
+  );
 }
 
 export function getThemeIdFromCookieHeader(
@@ -640,8 +648,12 @@ export function applyThemeToDom(themeId: ThemeId): void {
     theme.branding?.colors?.button_secondary_border,
     borderColor
   );
-  const footerBackgroundImage = theme.footer?.background_image_url?.trim();
-  const heroBackgroundImage = theme.homepage?.hero_background_image_url?.trim();
+  const footerBackgroundImage = resolveThemeAssetUrl(
+    theme.footer?.background_image_url
+  );
+  const heroBackgroundImage = resolveThemeAssetUrl(
+    theme.homepage?.hero_background_image_url
+  );
 
   document.documentElement.dataset.theme = themeId;
   setCssVariable('--color-primary', hexToRgbChannels(primaryHex, '#003C5B'));

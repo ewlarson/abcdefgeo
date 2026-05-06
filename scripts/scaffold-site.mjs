@@ -46,7 +46,7 @@ institution:
   hero_description:
     en: "Browse and download GIS data, maps, and other geospatial resources."
 api:
-  base_url: "https://lib-btaageoapi-dev-app-01.oit.umn.edu/api/v1"
+  base_url: "https://ogm.geo4lib.app/api/v1/"
   search_path: "/search"
   suggest_path: "/suggest"
   gazetteer_search_path: "/gazetteers/nominatim/search"

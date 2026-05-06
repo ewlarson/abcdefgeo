@@ -12,6 +12,7 @@ import {
   getDefaultThemeId,
   getAvailableThemes,
   getThemeConfig,
+  isThemeSelectorEnabled,
   isKnownThemeId,
   setActiveThemeId,
   subscribeToThemeChanges,
@@ -24,12 +25,14 @@ export interface ThemeContextValue {
   themeId: ThemeId;
   theme: ThemeConfig;
   themes: Array<{ id: ThemeId; label: string }>;
+  themeSelectorEnabled: boolean;
   setThemeId: (id: ThemeId) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const AVAILABLE_THEMES = getAvailableThemes();
+const THEME_SELECTOR_ENABLED = isThemeSelectorEnabled();
 
 export function ThemeProvider({
   children,
@@ -80,6 +83,7 @@ export function ThemeProvider({
       themeId,
       theme,
       themes: AVAILABLE_THEMES,
+      themeSelectorEnabled: THEME_SELECTOR_ENABLED,
       setThemeId: (id: ThemeId) => setActiveThemeId(id),
     }),
     [themeId, theme]
@@ -100,6 +104,7 @@ export function useThemeContext(): ThemeContextValue {
     themeId: fallbackId,
     theme: getThemeConfig(fallbackId),
     themes: getAvailableThemes(),
+    themeSelectorEnabled: isThemeSelectorEnabled(),
     setThemeId: () => {},
   };
 }

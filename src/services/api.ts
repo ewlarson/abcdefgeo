@@ -165,8 +165,8 @@ export function getApiBasePath(): string {
   if (!apiBaseUrl && !themedApiBaseUrl) {
     // Default fallback:
     // - Local dev: React app runs on :3000, API on :8000.
-    // - Deployed/static: prefer the public BTAA API hostname when no site-specific
-    //   config or environment override has been provided.
+    // - Deployed/static: prefer the public OpenGeoMetadata API hostname when no
+    //   site-specific config or environment override has been provided.
     if (typeof window !== 'undefined') {
       const host = window.location.hostname;
       if (host === 'localhost' || host === '127.0.0.1') {
@@ -174,7 +174,7 @@ export function getApiBasePath(): string {
       }
     }
 
-    return 'https://lib-btaageoapi-dev-app-01.oit.umn.edu/api/v1';
+    return 'https://ogm.geo4lib.app/api/v1/';
   }
   return '/api/v1';
 }
@@ -212,9 +212,7 @@ function getMapH3Path(): string {
 }
 
 function getHomeBlogPostsPath(): string {
-  return (
-    getActiveThemeConfig().api?.home_blog_posts_path || '/home/blog-posts'
-  );
+  return getActiveThemeConfig().api?.home_blog_posts_path || '/home/blog-posts';
 }
 
 // Helper function to create a URL with common parameters

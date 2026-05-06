@@ -149,7 +149,7 @@ function resolveApiBasePath(): string {
     }
   }
 
-  return 'https://lib-btaageoapi-dev-app-01.oit.umn.edu/api/v1';
+  return 'https://ogm.geo4lib.app/api/v1/';
 }
 
 function getTurnstileCredentialsMode(

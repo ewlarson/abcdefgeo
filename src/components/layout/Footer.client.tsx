@@ -1,8 +1,10 @@
 import React from 'react';
 import { ExternalLink } from 'lucide-react';
+import { Link } from 'react-router';
 import { useApi } from '../../context/ApiContext';
 import { useTheme } from '../../hooks/useTheme';
 import { useI18n } from '../../hooks/useI18n';
+import { isAbsoluteUrl, resolveThemeAssetUrl } from '../../utils/themeUrls';
 
 interface FooterProps {
   id?: string;
@@ -38,15 +40,16 @@ function FooterLink({
   }
 
   return (
-    <a href={href} className={className}>
+    <Link to={href} className={className}>
       {label}
-    </a>
+    </Link>
   );
 }
 
 export default function Footer({ id }: FooterProps) {
   const { lastApiUrl } = useApi();
-  const { theme, themeId, themes, setThemeId } = useTheme();
+  const { theme, themeId, themes, themeSelectorEnabled, setThemeId } =
+    useTheme();
   const { locale, locales, setLocale, t, text } = useI18n();
 
   const footerStyle = theme.footer?.style || 'simple';
@@ -60,13 +63,13 @@ export default function Footer({ id }: FooterProps) {
       ? 'bg-brand text-white print:hidden'
       : isPhotoFooter
         ? 'theme-footer-photo text-white print:hidden'
-      : 'bg-white shadow-sm print:hidden';
+        : 'bg-white shadow-sm print:hidden';
   const panelClass =
     footerStyle === 'network'
       ? 'bg-[#002a41] border border-white/15'
       : isPhotoFooter
         ? 'theme-footer-panel border rounded-2xl'
-      : 'bg-gray-50 border border-gray-200';
+        : 'bg-gray-50 border border-gray-200';
   const currentYear = new Date().getFullYear();
   const footerTitle =
     text(theme.footer?.title) ||
@@ -81,8 +84,25 @@ export default function Footer({ id }: FooterProps) {
     interpolateUrlTemplate(theme.api?.original_record_url_template, id);
   const originalRecordLabel =
     text(theme.footer?.original_record_label) || t('common.viewOriginal');
-  const showThemeSelector =
-    theme.site?.show_theme_selector === true && themes.length > 1;
+  const logoUrl = resolveThemeAssetUrl(
+    theme.footer?.logo_url || theme.institution.logo_url
+  );
+  const logoHref = theme.footer?.logo_href || '/';
+  const logoLinkIsExternal = isAbsoluteUrl(logoHref);
+  const logoImage = logoUrl ? (
+    <img
+      src={logoUrl}
+      alt={
+        text(theme.footer?.logo_alt) ||
+        text(theme.institution.logo_alt) ||
+        theme.institution.name
+      }
+      className={`w-auto ${
+        isPhotoFooter ? 'mx-auto h-14 rounded-sm' : 'h-16 rounded'
+      }`}
+    />
+  ) : null;
+  const showThemeSelector = themeSelectorEnabled && themes.length > 1;
   const showLocaleSelector =
     theme.site?.show_locale_selector === true && locales.length > 1;
   const showApiDebug = theme.footer?.show_api_debug === true;
@@ -99,20 +119,12 @@ export default function Footer({ id }: FooterProps) {
             }`}
           >
             <div className={isPhotoFooter ? 'max-w-xl' : 'max-w-sm'}>
-              {theme.footer?.logo_url || theme.institution.logo_url ? (
-                <a href={theme.footer?.logo_href || '/'}>
-                  <img
-                    src={theme.footer?.logo_url || theme.institution.logo_url}
-                    alt={
-                      text(theme.footer?.logo_alt) ||
-                      text(theme.institution.logo_alt) ||
-                      theme.institution.name
-                    }
-                    className={`w-auto ${
-                      isPhotoFooter ? 'mx-auto h-14 rounded-sm' : 'h-16 rounded'
-                    }`}
-                  />
-                </a>
+              {logoImage ? (
+                logoLinkIsExternal ? (
+                  <a href={logoHref}>{logoImage}</a>
+                ) : (
+                  <Link to={logoHref}>{logoImage}</Link>
+                )
               ) : (
                 <div
                   className={`text-lg font-semibold ${
@@ -151,7 +163,8 @@ export default function Footer({ id }: FooterProps) {
               </div>
             </div>
 
-            {(theme.footer?.link_groups?.length || theme.footer?.network_members?.length) && (
+            {(theme.footer?.link_groups?.length ||
+              theme.footer?.network_members?.length) && (
               <div
                 className={`grid gap-8 ${
                   isPhotoFooter

@@ -400,7 +400,7 @@ describe('fetchFeaturedResourcePreview', () => {
 
     expect(onApiCall).toHaveBeenCalledTimes(1);
     const url = new URL(onApiCall.mock.calls[0][0]);
-    expect(url.origin).toBe('https://lib-btaageoapi-dev-app-01.oit.umn.edu');
+    expect(url.origin).toBe('https://ogm.geo4lib.app');
     expect(url.pathname).toBe('/api/v1/resources/resource-1');
     expect(url.searchParams.get('format')).toBe('json');
     expect(url.searchParams.get('ui_profile')).toBe('homepage');

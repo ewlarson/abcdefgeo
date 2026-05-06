@@ -67,6 +67,10 @@ Preview the production build:
 npm run preview
 ```
 
+For the full adoption workflow, including GitHub Pages setup, theme modeling,
+and component customization guidance, see
+[docs/adopting-github-pages.md](docs/adopting-github-pages.md).
+
 ## Configuration
 
 The main configuration file is `theme.yaml`. It should read like a complete
@@ -86,7 +90,11 @@ Theme configuration controls:
 - homepage hero content, featured records, collection spotlights, media, and
   blog modules
 - footer layout, links, institutional address, and copyright text
-- BTAA Geospatial API base URL, endpoint paths, and default query parameters
+- backend API root endpoint, endpoint paths, and default query parameters
+
+The default backend API root is `https://ogm.geo4lib.app/api/v1/`. Override
+`api.base_url` in `theme.yaml` when an institution needs to point at a different
+compatible API deployment.
 
 For a new institutional deployment, copy `theme.yaml` for a single-site build or
 add a new `themes/<theme-id>.yaml` file when you want it available alongside the
@@ -102,7 +110,8 @@ Common variables:
 
 - `VITE_BASE_URL`: base path for Vite builds, usually `/`.
 - `VITE_API_BASE_URL`: legacy API base URL fallback when a theme does not define
-  `api.base_url`.
+  `api.base_url`. Prefer `api.base_url` in `theme.yaml`; the default public root
+  is `https://ogm.geo4lib.app/api/v1/`.
 - `VITE_CSRF_TOKEN`: optional CSRF token placeholder for deployments that need
   it.
 - `VITE_APP_VERSION`: version label sent in API diagnostic headers.

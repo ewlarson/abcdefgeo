@@ -18,6 +18,20 @@ function ensureLeadingSlash(value) {
   return value.startsWith('/') ? value : `/${value}`;
 }
 
+function normalizeBasePath(value) {
+  if (!value || value === '/') return '/';
+  const withLeadingSlash = value.startsWith('/') ? value : `/${value}`;
+  return withLeadingSlash.endsWith('/')
+    ? withLeadingSlash
+    : `${withLeadingSlash}/`;
+}
+
+function withBasePath(value, basePath) {
+  const normalizedValue = ensureLeadingSlash(value);
+  if (basePath === '/') return normalizedValue;
+  return `${basePath.replace(/\/$/, '')}${normalizedValue}`;
+}
+
 function isRecord(value) {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
@@ -156,28 +170,31 @@ async function main() {
     theme.site?.manifest?.background_color ||
     theme.branding?.colors?.page_background ||
     themeColor;
+  const basePath = normalizeBasePath(
+    process.env.VITE_BASE_URL || process.env.BASE_URL
+  );
 
   const manifest = {
     name: siteTitle,
     short_name: shortName,
     description,
-    start_url: '/',
+    start_url: basePath,
     display: theme.site?.manifest?.display || 'standalone',
     theme_color: themeColor,
     background_color: backgroundColor,
     icons: [
       {
-        src: ensureLeadingSlash('pwa-64x64.png'),
+        src: withBasePath('pwa-64x64.png', basePath),
         sizes: '64x64',
         type: 'image/png',
       },
       {
-        src: ensureLeadingSlash('pwa-192x192.png'),
+        src: withBasePath('pwa-192x192.png', basePath),
         sizes: '192x192',
         type: 'image/png',
       },
       {
-        src: ensureLeadingSlash('pwa-512x512.png'),
+        src: withBasePath('pwa-512x512.png', basePath),
         sizes: '512x512',
         type: 'image/png',
       },
