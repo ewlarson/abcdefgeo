@@ -1,0 +1,169 @@
+:root {
+  --color-primary: 0 60 91;
+  --color-active: 37 99 235;
+  --font-sans: "Work Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --font-heading: var(--font-sans);
+  --font-ui: var(--font-sans);
+  --header-lockup-bg: #003c5b;
+  --header-lockup-fg: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-alt: #e6eef3;
+  --color-text: #10212e;
+  --color-muted: #5f6e7d;
+  --color-border: #d5dee6;
+  --color-page-bg: #f7fafc;
+  --color-header-bg: #003c5b;
+  --color-header-text: #ffffff;
+  --color-utility-bg: #002a41;
+  --color-utility-text: rgba(255, 255, 255, 0.92);
+  --color-hero-panel-bg: rgba(255, 255, 255, 0.88);
+  --color-hero-panel-accent: #003c5b;
+  --color-footer-overlay: rgba(0, 42, 65, 0.88);
+  --color-footer-panel-bg: rgba(255, 255, 255, 0.08);
+  --button-primary-hover: #002f49;
+  --button-secondary-bg: #ffffff;
+  --button-secondary-hover: #f3f6f9;
+  --button-secondary-text: #003c5b;
+  --button-secondary-border: #d5dee6;
+  --footer-bg-image: none;
+  --hero-bg-image: none;
+}
+
+/* Logo lockup text: explicit hex bg + color for axe/Pa11y contrast checks.
+   !important ensures no override; hex values are unambiguous. */
+.header-logo-lockup-text {
+  background-color: var(--header-lockup-bg) !important;
+  color: var(--header-lockup-fg) !important;
+}
+
+html,
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-page-bg);
+  color: var(--color-text);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  color: var(--color-text);
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: var(--font-sans);
+}
+
+@layer components {
+  .theme-shell {
+    background-color: var(--color-page-bg);
+    color: var(--color-text);
+  }
+
+  .theme-page-surface {
+    background-color: var(--color-surface);
+    border-color: var(--color-border);
+  }
+
+  .theme-page-surface-muted {
+    background-color: var(--color-surface-alt);
+    border-color: var(--color-border);
+  }
+
+  .theme-border {
+    border-color: var(--color-border);
+  }
+
+  .theme-header {
+    background-color: var(--color-header-bg);
+    color: var(--color-header-text);
+  }
+
+  .theme-utility-row {
+    background-color: var(--color-utility-bg);
+    color: var(--color-utility-text);
+  }
+
+  .theme-hero-panel {
+    background-color: var(--color-hero-panel-bg);
+    border: 1px solid color-mix(in srgb, var(--color-border) 72%, white 28%);
+    box-shadow:
+      0 20px 46px rgba(0, 0, 0, 0.18),
+      0 0 0 1px rgba(255, 255, 255, 0.32) inset;
+    backdrop-filter: blur(12px);
+  }
+
+  .theme-hero-accent {
+    background: linear-gradient(
+      180deg,
+      var(--color-hero-panel-accent),
+      color-mix(in srgb, var(--color-hero-panel-accent) 78%, black 22%)
+    );
+  }
+
+  .theme-photo-overlay {
+    background-image:
+      linear-gradient(
+        135deg,
+        rgba(4, 30, 66, 0.88) 0%,
+        rgba(4, 30, 66, 0.52) 52%,
+        rgba(4, 30, 66, 0.74) 100%
+      ),
+      var(--hero-bg-image);
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+  }
+
+  .theme-footer-photo {
+    background-image:
+      linear-gradient(
+        180deg,
+        var(--color-footer-overlay) 0%,
+        color-mix(in srgb, var(--color-footer-overlay) 78%, black 22%) 100%
+      ),
+      var(--footer-bg-image);
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+  }
+
+  .theme-footer-panel {
+    background-color: var(--color-footer-panel-bg);
+    border-color: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(8px);
+  }
+
+  .theme-ui {
+    font-family: var(--font-ui);
+  }
+
+  .theme-kicker {
+    color: rgb(var(--color-primary));
+  }
+
+  .theme-text-strong {
+    color: var(--color-text);
+  }
+
+  .theme-text-muted {
+    color: var(--color-muted);
+  }
+
+  .theme-facet-button {
+    border-color: var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+  }
+
+  .theme-facet-button:hover {
+    background-color: var(--color-surface-alt);
+  }
+}
