@@ -6,12 +6,18 @@
  * This test verifies that the 11th request succeeds when using an API key.
  */
 
-const API_BASE_URL = process.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL =
+  process.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 const SEARCH_ENDPOINT = `${API_BASE_URL}/search`;
-const API_KEY = process.env.BTAA_GEOSPATIAL_API_KEY || process.env.VITE_API_KEY;
+const API_KEY =
+  process.env.BTAA_GEOSPATIAL_API_KEY ||
+  process.env.VITE_API_PUBLIC_KEY ||
+  process.env.VITE_API_KEY;
 
 if (!API_KEY) {
-  console.error('Set BTAA_GEOSPATIAL_API_KEY or VITE_API_KEY before running this script.');
+  console.error(
+    'Set BTAA_GEOSPATIAL_API_KEY, VITE_API_PUBLIC_KEY, or VITE_API_KEY before running this script.'
+  );
   process.exit(1);
 }
 
@@ -27,9 +33,9 @@ async function makeRequest(requestNumber, useApiKey = true) {
     'Accept': 'application/vnd.api+json, application/json',
   };
 
-  // Add API key via X-API-Key header (recommended method)
+  // Browser calls use Authorization because it is allowed by production CORS.
   if (useApiKey) {
-    headers['X-API-Key'] = API_KEY;
+    headers.Authorization = `Bearer ${API_KEY}`;
   }
 
   const startTime = Date.now();

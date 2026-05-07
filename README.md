@@ -90,11 +90,44 @@ Theme configuration controls:
 - homepage hero content, featured records, collection spotlights, media, and
   blog modules
 - footer layout, links, institutional address, and copyright text
-- backend API root endpoint, endpoint paths, and default query parameters
+- backend API root endpoint, endpoint paths, optional public API key, and
+  default query parameters
 
 The default backend API root is `https://ogm.geo4lib.app/api/v1/`. Override
 `api.base_url` in `theme.yaml` when an institution needs to point at a different
 compatible API deployment.
+
+Static browser deployments can also set `api.public_api_key` to a rate-limited,
+browser-safe key. The viewer sends it as `Authorization: Bearer <key>`. Treat
+this value as public because it is embedded in the built site and shares one
+quota across all visitors.
+
+### Adding A Public API Key
+
+Use only capped, browser-safe API keys in this frontend. A key in a static build
+is visible to anyone who opens the site, so it must not be a private backend or
+administrator secret.
+
+For the repository's GitHub Pages deployment, add the key to the Pages workflow
+environment so it applies to the built site:
+
+```yaml
+env:
+  VITE_API_PUBLIC_KEY: browser-safe-rate-limited-key
+```
+
+For an institution-specific theme, add the key beside the API root:
+
+```yaml
+api:
+  base_url: https://ogm.geo4lib.app/api/v1/
+  public_api_key: browser-safe-rate-limited-key
+```
+
+Both approaches send the key on API requests as `Authorization: Bearer <key>`.
+Prefer `VITE_API_PUBLIC_KEY` when one GitHub Pages build should use the same key
+for every included theme variation. Prefer `api.public_api_key` when a copied or
+forked theme needs to carry its own public API credentials.
 
 For a new institutional deployment, copy `theme.yaml` for a single-site build or
 add a new `themes/<theme-id>.yaml` file when you want it available alongside the
@@ -112,6 +145,9 @@ Common variables:
 - `VITE_API_BASE_URL`: legacy API base URL fallback when a theme does not define
   `api.base_url`. Prefer `api.base_url` in `theme.yaml`; the default public root
   is `https://ogm.geo4lib.app/api/v1/`.
+- `VITE_API_PUBLIC_KEY`: optional browser-visible fallback key sent as
+  `Authorization: Bearer`. This is useful for deployment-wide static builds,
+  such as GitHub Pages workflows.
 - `VITE_CSRF_TOKEN`: optional CSRF token placeholder for deployments that need
   it.
 - `VITE_APP_VERSION`: version label sent in API diagnostic headers.
@@ -120,7 +156,8 @@ Common variables:
 - `VITE_TURNSTILE_SITE_KEY`: Cloudflare Turnstile site key.
 - `VITE_TURNSTILE_ACTION`: Turnstile action name.
 
-Do not commit real `.env` files or private API keys.
+Do not commit real `.env` files or private API keys. A capped public browser key
+may live in theme config only when it is intentionally safe to expose.
 
 ## Scripts
 

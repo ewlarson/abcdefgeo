@@ -171,7 +171,7 @@ homepage:
         en: Historical map preview for My Institution collections
 ```
 
-## 5. Configure The Backend API Root
+## 5. Configure The Backend API Root And API Key
 
 The viewer reads the active theme's `api.base_url` as the backend API root. The
 starter default is:
@@ -189,6 +189,33 @@ only when you operate one yourself:
 api:
   base_url: https://geo.example.edu/api/v1/
 ```
+
+If the API deployment requires a browser key, use only a capped public key. A
+key in a static GitHub Pages build is visible to anyone who opens the site, so it
+must not be a private backend or administrator secret.
+
+For one GitHub Pages build that should use the same key across every bundled
+theme, add `VITE_API_PUBLIC_KEY` to `.github/workflows/deploy.yml`:
+
+```yaml
+jobs:
+  deploy:
+    env:
+      VITE_API_PUBLIC_KEY: browser-safe-rate-limited-key
+```
+
+For an institution-specific theme, add the key beside the API root:
+
+```yaml
+api:
+  base_url: https://ogm.geo4lib.app/api/v1/
+  public_api_key: browser-safe-rate-limited-key
+```
+
+The static viewer sends either value as `Authorization: Bearer <key>`. Do not
+use `X-API-Key` for browser deployments unless the API's CORS policy explicitly
+allows it. Every visitor shares the same key quota, so pick a rate limit that can
+absorb normal public traffic.
 
 `VITE_API_BASE_URL` still exists as a legacy fallback for deployments whose
 theme does not define `api.base_url`, but new institutional sites should keep the

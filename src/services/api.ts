@@ -23,8 +23,8 @@ export class ApiError extends Error {
 
 /**
  * Builds headers for API requests.
- * Authentication (API key) is handled by the NGINX BFF proxy server-side,
- * so no authentication headers are needed in the client.
+ * Static deployments can include a browser-safe, rate-limited public API key
+ * in theme config. It is intentionally visible to users of the built site.
  */
 const VISIT_TOKEN_STORAGE_KEY = 'ogm_visit_token';
 
@@ -54,12 +54,25 @@ export function getVisitToken(): string | undefined {
   }
 }
 
+function getPublicApiKey(): string | undefined {
+  const configuredKey =
+    getActiveThemeConfig().api?.public_api_key ||
+    import.meta.env.VITE_API_PUBLIC_KEY;
+  const normalized = configuredKey?.trim();
+  return normalized || undefined;
+}
+
 function buildApiHeaders(urlObj: URL): HeadersInit {
   const theme = getActiveThemeConfig();
   const clientName = theme.api?.client_name || 'ogm-viewer';
   const headers: Record<string, string> = {
     Accept: 'application/vnd.api+json, application/json',
   };
+  const publicApiKey = getPublicApiKey();
+
+  if (publicApiKey) {
+    headers.Authorization = `Bearer ${publicApiKey}`;
+  }
 
   const appVersion = import.meta.env.VITE_APP_VERSION || 'dev';
 

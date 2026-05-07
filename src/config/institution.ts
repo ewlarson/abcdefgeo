@@ -162,6 +162,7 @@ export interface ThemeConfig {
   };
   api: {
     base_url: string;
+    public_api_key?: string;
     search_path?: string;
     suggest_path?: string;
     gazetteer_search_path?: string;

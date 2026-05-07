@@ -7,5 +7,6 @@ Start here:
 
 - [Adopting The Viewer On GitHub Pages](./adopting-github-pages.md)
 
-The adopter guide covers repository setup, theme modeling, GitHub Pages
-deployment, update hygiene, and the current state of component customization.
+The adopter guide covers repository setup, theme modeling, public API keys,
+GitHub Pages deployment, update hygiene, and the current state of component
+customization.

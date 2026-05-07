@@ -22,6 +22,7 @@ jobs:
     env:
       OGM_THEME: opengeometadata
       VITE_BASE_URL: /abcdefgeo/
+      VITE_API_PUBLIC_KEY: 225b47b4-b640-48ff-bf82-28d37d5131fa
     steps:
       - name: Checkout
         uses: actions/checkout@v6

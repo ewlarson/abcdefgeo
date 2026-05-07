@@ -411,6 +411,8 @@ describe('fetchFeaturedResourcePreview', () => {
 describe('fetchResourceDetails', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv('VITE_API_PUBLIC_KEY', '225b47b4-b640-48ff-bf82-28d37d5131fa');
+    window.localStorage.clear();
     window.sessionStorage.clear();
     Object.defineProperty(window, 'location', {
       value: {
@@ -419,6 +421,10 @@ describe('fetchResourceDetails', () => {
       },
       writable: true,
     });
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('does not send stale Turnstile session headers when Turnstile is not configured', async () => {
@@ -446,6 +452,7 @@ describe('fetchResourceDetails', () => {
     const requestInit = (global.fetch as any).mock.calls[0][1];
     expect(requestInit.headers).toMatchObject({
       Accept: 'application/vnd.api+json, application/json',
+      Authorization: 'Bearer 225b47b4-b640-48ff-bf82-28d37d5131fa',
     });
     expect(requestInit.headers).not.toHaveProperty('X-Turnstile-Session');
     expect(requestInit.mode).toBe('cors');
