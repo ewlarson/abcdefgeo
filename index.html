@@ -2,10 +2,32 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" href="%BASE_URL%favicon.ico" sizes="48x48" />
+    <link
+      rel="manifest"
+      href="%BASE_URL%manifest.webmanifest"
+      data-ogm-theme-head-link="manifest"
+    />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="%BASE_URL%favicon.svg"
+      data-ogm-theme-head-link="favicon-svg"
+    />
+    <link
+      rel="icon"
+      href="%BASE_URL%favicon.ico"
+      sizes="48x48"
+      data-ogm-theme-head-link="favicon"
+    />
     <link
       rel="apple-touch-icon"
       href="%BASE_URL%apple-touch-icon-180x180.png"
+      data-ogm-theme-head-link="apple-touch-icon"
+    />
+    <meta
+      name="theme-color"
+      content="#111111"
+      data-ogm-theme-head-meta="theme-color"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="csrf-param" content="authenticity_token" />

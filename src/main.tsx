@@ -18,6 +18,19 @@ const Router = routeMode === 'hash' ? HashRouter : BrowserRouter;
 const routerBasename =
   routeMode === 'hash' ? undefined : import.meta.env.BASE_URL || '/';
 
+function registerProductionServiceWorker(): void {
+  if (!import.meta.env.PROD) return;
+  if (typeof document === 'undefined') return;
+  if (!('serviceWorker' in navigator)) return;
+
+  const baseUrl = import.meta.env.BASE_URL || '/';
+  const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = `${normalizedBaseUrl}registerSW.js`;
+  document.head.appendChild(script);
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Router basename={routerBasename}>
@@ -35,3 +48,5 @@ createRoot(document.getElementById('root')!).render(
     </Router>
   </StrictMode>
 );
+
+registerProductionServiceWorker();

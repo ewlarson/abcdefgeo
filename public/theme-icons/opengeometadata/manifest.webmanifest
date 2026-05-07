@@ -1,26 +1,26 @@
 {
-  "id": "/?ogm_theme=opengeometadata",
+  "id": "../../?ogm_theme=opengeometadata",
   "name": "OpenGeoMetadata Geoportal",
   "short_name": "OpenGeoMetadata",
   "description": "A configurable geospatial discovery site for a fictitious OpenGeoMetadata institution.",
-  "start_url": "/?ogm_theme=opengeometadata",
-  "scope": "/",
+  "start_url": "../../?ogm_theme=opengeometadata",
+  "scope": "../../",
   "display": "standalone",
   "theme_color": "#111111",
   "background_color": "#F6F0D8",
   "icons": [
     {
-      "src": "/theme-icons/opengeometadata/pwa-64x64.png",
+      "src": "pwa-64x64.png",
       "sizes": "64x64",
       "type": "image/png"
     },
     {
-      "src": "/theme-icons/opengeometadata/pwa-192x192.png",
+      "src": "pwa-192x192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/theme-icons/opengeometadata/pwa-512x512.png",
+      "src": "pwa-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
     }

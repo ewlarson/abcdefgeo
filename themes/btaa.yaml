@@ -17,6 +17,20 @@ site:
   show_theme_selector: true
   routing:
     mode: browser
+  icons:
+    manifest: /theme-icons/btaa/manifest.webmanifest
+    favicon: /theme-icons/btaa/favicon.ico
+    apple_touch_icon: /theme-icons/btaa/apple-touch-icon-180x180.png
+    pwa:
+      - src: /theme-icons/btaa/pwa-64x64.png
+        sizes: 64x64
+        type: image/png
+      - src: /theme-icons/btaa/pwa-192x192.png
+        sizes: 192x192
+        type: image/png
+      - src: /theme-icons/btaa/pwa-512x512.png
+        sizes: 512x512
+        type: image/png
   manifest:
     display: standalone
     background_color: '#003C5B'

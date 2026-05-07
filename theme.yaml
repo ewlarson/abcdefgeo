@@ -14,6 +14,21 @@ site:
   show_theme_selector: true
   routing:
     mode: hash
+  icons:
+    manifest: /theme-icons/opengeometadata/manifest.webmanifest
+    favicon: /theme-icons/opengeometadata/favicon.ico
+    favicon_svg: /theme-icons/opengeometadata/favicon.svg
+    apple_touch_icon: /theme-icons/opengeometadata/apple-touch-icon-180x180.png
+    pwa:
+      - src: /theme-icons/opengeometadata/pwa-64x64.png
+        sizes: 64x64
+        type: image/png
+      - src: /theme-icons/opengeometadata/pwa-192x192.png
+        sizes: 192x192
+        type: image/png
+      - src: /theme-icons/opengeometadata/pwa-512x512.png
+        sizes: 512x512
+        type: image/png
   manifest:
     display: standalone
     background_color: '#F6F0D8'

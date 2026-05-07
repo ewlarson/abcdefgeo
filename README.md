@@ -84,6 +84,7 @@ BTAA Geoportal behavior and localization.
 Theme configuration controls:
 
 - site title, description, locale support, and web app manifest colors
+- theme-specific favicon, Apple touch icon, and PWA install icons
 - institution name, logo, header lockup, and hero copy
 - brand colors, fonts, and optional institution-hosted font stylesheets
 - navigation links, utility links, and calls to action
@@ -133,6 +134,35 @@ For a new institutional deployment, copy `theme.yaml` for a single-site build or
 add a new `themes/<theme-id>.yaml` file when you want it available alongside the
 included examples. Prefer theme fields over hardcoding institution-specific
 behavior in components.
+
+### Theme Icons And PWA Install Assets
+
+Each theme can define its browser and install icons through `site.icons`.
+Included themes keep their packs in `public/theme-icons/<theme-id>/`:
+
+```yaml
+site:
+  icons:
+    manifest: /theme-icons/my-institution/manifest.webmanifest
+    favicon: /theme-icons/my-institution/favicon.ico
+    favicon_svg: /theme-icons/my-institution/favicon.svg # optional
+    apple_touch_icon: /theme-icons/my-institution/apple-touch-icon-180x180.png
+    pwa:
+      - src: /theme-icons/my-institution/pwa-64x64.png
+        sizes: 64x64
+        type: image/png
+      - src: /theme-icons/my-institution/pwa-192x192.png
+        sizes: 192x192
+        type: image/png
+      - src: /theme-icons/my-institution/pwa-512x512.png
+        sizes: 512x512
+        type: image/png
+```
+
+`npm run generate:site` writes a web app manifest for every configured theme and
+uses `?ogm_theme=<theme-id>` as the install start URL so a launched PWA opens
+with the installed theme active. When adding a theme, create the matching icon
+pack before publishing the build.
 
 ## Environment Variables
 
@@ -190,6 +220,8 @@ When adding a new theme:
 - keep one institution per YAML file
 - keep `btaa` working as the reference implementation
 - keep copy localizable by using localized objects for configurable text
+- add a favicon, Apple touch icon, and PWA icon pack under
+  `public/theme-icons/<theme-id>/`
 - use theme fields for institution names, logos, links, colors, and homepage
   content
 - avoid server-only assumptions so the site remains static-host friendly

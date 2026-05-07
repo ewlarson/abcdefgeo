@@ -26,14 +26,102 @@ function normalizeBasePath(value) {
     : `${withLeadingSlash}/`;
 }
 
+function isAbsoluteUrl(value) {
+  if (!value) return false;
+  return /^[a-z][a-z0-9+.-]*:/i.test(value) || value.startsWith('//');
+}
+
 function withBasePath(value, basePath) {
+  if (!value) return value;
+  if (isAbsoluteUrl(value)) return value;
   const normalizedValue = ensureLeadingSlash(value);
   if (basePath === '/') return normalizedValue;
   return `${basePath.replace(/\/$/, '')}${normalizedValue}`;
 }
 
+function stripLeadingSlash(value) {
+  return value.replace(/^\/+/, '');
+}
+
 function isRecord(value) {
   return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+const FALLBACK_ICON_PACK = {
+  manifest: '/manifest.webmanifest',
+  favicon: '/favicon.ico',
+  apple_touch_icon: '/apple-touch-icon-180x180.png',
+  pwa: [
+    {
+      src: '/pwa-64x64.png',
+      sizes: '64x64',
+      type: 'image/png',
+    },
+    {
+      src: '/pwa-192x192.png',
+      sizes: '192x192',
+      type: 'image/png',
+    },
+    {
+      src: '/pwa-512x512.png',
+      sizes: '512x512',
+      type: 'image/png',
+    },
+  ],
+};
+
+function getThemeIconPack(theme) {
+  const icons = theme.site?.icons || {};
+  const pwaIcons =
+    Array.isArray(icons.pwa) && icons.pwa.length > 0
+      ? icons.pwa
+      : FALLBACK_ICON_PACK.pwa;
+
+  return {
+    manifest: icons.manifest || FALLBACK_ICON_PACK.manifest,
+    favicon: icons.favicon || FALLBACK_ICON_PACK.favicon,
+    favicon_svg: icons.favicon_svg,
+    apple_touch_icon:
+      icons.apple_touch_icon || FALLBACK_ICON_PACK.apple_touch_icon,
+    pwa: pwaIcons,
+  };
+}
+
+function manifestIcon(icon, src) {
+  return {
+    src,
+    sizes: icon.sizes,
+    type: icon.type || 'image/png',
+    ...(icon.purpose ? { purpose: icon.purpose } : {}),
+  };
+}
+
+function appendThemeParam(url, themeId) {
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}ogm_theme=${encodeURIComponent(themeId)}`;
+}
+
+function localPublicPathFromUrl(value) {
+  if (!value || isAbsoluteUrl(value) || value.startsWith('#')) return null;
+  const relativePath = stripLeadingSlash(value);
+  if (!relativePath) return null;
+  return path.join(publicDir, relativePath);
+}
+
+function relativeUrlFromManifest(manifestUrl, targetUrl) {
+  if (isAbsoluteUrl(targetUrl)) return targetUrl;
+  const manifestDir = path.posix.dirname(stripLeadingSlash(manifestUrl));
+  const targetPath = stripLeadingSlash(targetUrl);
+  return (
+    path.posix.relative(manifestDir, targetPath) ||
+    path.posix.basename(targetPath)
+  );
+}
+
+function relativeRootFromManifest(manifestUrl) {
+  const manifestDir = path.posix.dirname(stripLeadingSlash(manifestUrl));
+  const relativeRoot = path.posix.relative(manifestDir, '') || '.';
+  return relativeRoot.endsWith('/') ? relativeRoot : `${relativeRoot}/`;
 }
 
 function looksLikeThemeConfig(value) {
@@ -138,20 +226,7 @@ async function loadThemeRegistry() {
   };
 }
 
-async function main() {
-  const registry = await loadThemeRegistry();
-  const themeId =
-    process.env.OGM_THEME ||
-    registry.default_theme ||
-    Object.keys(registry.themes)[0];
-  const theme = registry.themes[themeId];
-
-  if (!theme) {
-    throw new Error(
-      `Theme "${themeId}" was not found in theme.yaml or themes/*.yaml`
-    );
-  }
-
+function getThemeManifestMetadata(themeId, theme) {
   const locale = theme.site?.locale || 'en';
   const siteTitle =
     resolveLocalizedText(theme.site?.title, locale) ||
@@ -170,38 +245,118 @@ async function main() {
     theme.site?.manifest?.background_color ||
     theme.branding?.colors?.page_background ||
     themeColor;
+
+  return {
+    siteTitle,
+    shortName,
+    description,
+    themeColor,
+    backgroundColor,
+  };
+}
+
+function buildThemeManifest(themeId, theme, options) {
+  const { siteTitle, shortName, description, themeColor, backgroundColor } =
+    getThemeManifestMetadata(themeId, theme);
+  const iconPack = getThemeIconPack(theme);
+
+  return {
+    id: options.id,
+    name: siteTitle,
+    short_name: shortName,
+    description,
+    start_url: options.startUrl,
+    scope: options.scope,
+    display: theme.site?.manifest?.display || 'standalone',
+    theme_color: themeColor,
+    background_color: backgroundColor,
+    icons: iconPack.pwa.map((icon) =>
+      manifestIcon(icon, options.resolveIconSrc(icon.src))
+    ),
+  };
+}
+
+async function writeThemeManifest(themeId, theme) {
+  const iconPack = getThemeIconPack(theme);
+  const manifestPath = localPublicPathFromUrl(iconPack.manifest);
+  if (!manifestPath) return;
+
+  const relativeRoot = relativeRootFromManifest(iconPack.manifest);
+  const manifest = buildThemeManifest(themeId, theme, {
+    id: appendThemeParam(relativeRoot, themeId),
+    startUrl: appendThemeParam(relativeRoot, themeId),
+    scope: relativeRoot,
+    resolveIconSrc: (src) => relativeUrlFromManifest(iconPack.manifest, src),
+  });
+
+  await fs.mkdir(path.dirname(manifestPath), { recursive: true });
+  await fs.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+}
+
+async function copyPublicAsset(sourceUrl, targetFileName) {
+  const sourcePath = localPublicPathFromUrl(sourceUrl);
+  if (!sourcePath) return;
+
+  const targetPath = path.join(publicDir, targetFileName);
+  if (path.resolve(sourcePath) === path.resolve(targetPath)) return;
+
+  try {
+    await fs.copyFile(sourcePath, targetPath);
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+    console.warn(
+      `Configured theme icon was not found and could not be copied: ${sourceUrl}`
+    );
+  }
+}
+
+async function copyThemeIconPackToRoot(theme) {
+  const iconPack = getThemeIconPack(theme);
+  await copyPublicAsset(iconPack.favicon, 'favicon.ico');
+  await copyPublicAsset(iconPack.favicon_svg, 'favicon.svg');
+  await copyPublicAsset(
+    iconPack.apple_touch_icon,
+    'apple-touch-icon-180x180.png'
+  );
+
+  for (const icon of iconPack.pwa) {
+    const targetName = `pwa-${icon.sizes}.png`;
+    await copyPublicAsset(icon.src, targetName);
+  }
+}
+
+async function main() {
+  const registry = await loadThemeRegistry();
+  const themeId =
+    process.env.OGM_THEME ||
+    registry.default_theme ||
+    Object.keys(registry.themes)[0];
+  const theme = registry.themes[themeId];
+
+  if (!theme) {
+    throw new Error(
+      `Theme "${themeId}" was not found in theme.yaml or themes/*.yaml`
+    );
+  }
+
   const basePath = normalizeBasePath(
     process.env.VITE_BASE_URL || process.env.BASE_URL
   );
 
-  const manifest = {
-    name: siteTitle,
-    short_name: shortName,
-    description,
-    start_url: basePath,
-    display: theme.site?.manifest?.display || 'standalone',
-    theme_color: themeColor,
-    background_color: backgroundColor,
-    icons: [
-      {
-        src: withBasePath('pwa-64x64.png', basePath),
-        sizes: '64x64',
-        type: 'image/png',
-      },
-      {
-        src: withBasePath('pwa-192x192.png', basePath),
-        sizes: '192x192',
-        type: 'image/png',
-      },
-      {
-        src: withBasePath('pwa-512x512.png', basePath),
-        sizes: '512x512',
-        type: 'image/png',
-      },
-    ],
-  };
+  const manifest = buildThemeManifest(themeId, theme, {
+    id: appendThemeParam(basePath, themeId),
+    startUrl: appendThemeParam(basePath, themeId),
+    scope: basePath,
+    resolveIconSrc: (src) => withBasePath(src, basePath),
+  });
 
   await fs.mkdir(publicDir, { recursive: true });
+  await Promise.all(
+    Object.entries(registry.themes).map(([id, themeConfig]) =>
+      writeThemeManifest(id, themeConfig)
+    )
+  );
+  await copyThemeIconPackToRoot(theme);
   await fs.writeFile(
     path.join(publicDir, 'manifest.webmanifest'),
     `${JSON.stringify(manifest, null, 2)}\n`

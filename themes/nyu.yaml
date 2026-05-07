@@ -10,6 +10,21 @@ site:
   show_theme_selector: true
   routing:
     mode: browser
+  icons:
+    manifest: /theme-icons/nyu/manifest.webmanifest
+    favicon: /theme-icons/nyu/nyu-favicon.ico
+    favicon_svg: /theme-icons/nyu/nyu-favicon.svg
+    apple_touch_icon: /theme-icons/nyu/nyu-apple-touch-icon-180x180.png
+    pwa:
+      - src: /theme-icons/nyu/nyu-pwa-64x64.png
+        sizes: 64x64
+        type: image/png
+      - src: /theme-icons/nyu/nyu-pwa-192x192.png
+        sizes: 192x192
+        type: image/png
+      - src: /theme-icons/nyu/nyu-pwa-512x512.png
+        sizes: 512x512
+        type: image/png
   manifest:
     background_color: '#57068C'
     theme_color: '#57068C'

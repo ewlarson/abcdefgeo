@@ -36,6 +36,21 @@ site:
     - "en"
   routing:
     mode: "browser"
+  icons:
+    manifest: "/theme-icons/${themeId}/manifest.webmanifest"
+    favicon: "/theme-icons/${themeId}/favicon.ico"
+    favicon_svg: "/theme-icons/${themeId}/favicon.svg"
+    apple_touch_icon: "/theme-icons/${themeId}/apple-touch-icon-180x180.png"
+    pwa:
+      - src: "/theme-icons/${themeId}/pwa-64x64.png"
+        sizes: "64x64"
+        type: "image/png"
+      - src: "/theme-icons/${themeId}/pwa-192x192.png"
+        sizes: "192x192"
+        type: "image/png"
+      - src: "/theme-icons/${themeId}/pwa-512x512.png"
+        sizes: "512x512"
+        type: "image/png"
 institution:
   name: ${q(`${institutionName} Geoportal`)}
   logo_url: "/logo.svg"

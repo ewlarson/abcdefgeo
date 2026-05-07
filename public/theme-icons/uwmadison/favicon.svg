@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">UW-Madison Geoportal app icon</title>
+  <desc id="desc">A red app icon with white stacked geodata layers.</desc>
+  <rect width="512" height="512" rx="72" fill="#c5050c"/>
+  <path d="M256 90 398 162 256 234 114 162z" fill="none" stroke="#ffffff" stroke-width="30" stroke-linejoin="round"/>
+  <path d="M256 176 398 248 256 320 114 248z" fill="none" stroke="#ffffff" stroke-width="30" stroke-linejoin="round" opacity=".86"/>
+  <path d="M256 262 398 334 256 406 114 334z" fill="none" stroke="#ffffff" stroke-width="30" stroke-linejoin="round" opacity=".72"/>
+  <path d="M146 162h220M146 248h220M146 334h220" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" opacity=".42"/>
+</svg>

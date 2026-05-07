@@ -1,0 +1,28 @@
+{
+  "id": "../../?ogm_theme=nyu",
+  "name": "NYU Spatial Data Repository",
+  "short_name": "NYU Spatial Data Repository",
+  "description": "Search geospatial resources from New York University.",
+  "start_url": "../../?ogm_theme=nyu",
+  "scope": "../../",
+  "display": "standalone",
+  "theme_color": "#57068C",
+  "background_color": "#57068C",
+  "icons": [
+    {
+      "src": "nyu-pwa-64x64.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "nyu-pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "nyu-pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

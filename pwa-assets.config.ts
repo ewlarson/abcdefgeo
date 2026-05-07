@@ -18,5 +18,5 @@ export default defineConfig({
       resizeOptions: { fit: 'cover' },
     },
   },
-  images: ['public/btaa-geoportal-logo.png'],
+  images: ['public/theme-icons/opengeometadata/favicon.svg'],
 });

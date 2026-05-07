@@ -10,6 +10,21 @@ site:
   show_theme_selector: true
   routing:
     mode: browser
+  icons:
+    manifest: /theme-icons/uwmadison/manifest.webmanifest
+    favicon: /theme-icons/uwmadison/favicon.ico
+    favicon_svg: /theme-icons/uwmadison/favicon.svg
+    apple_touch_icon: /theme-icons/uwmadison/apple-touch-icon-180x180.png
+    pwa:
+      - src: /theme-icons/uwmadison/pwa-64x64.png
+        sizes: 64x64
+        type: image/png
+      - src: /theme-icons/uwmadison/pwa-192x192.png
+        sizes: 192x192
+        type: image/png
+      - src: /theme-icons/uwmadison/pwa-512x512.png
+        sizes: 512x512
+        type: image/png
   manifest:
     background_color: '#C5050C'
     theme_color: '#C5050C'

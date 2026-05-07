@@ -93,7 +93,7 @@ Configure these sections first:
 
 - `id` and `label`: stable theme id and human-readable institution label.
 - `site`: title, short name, description, locale, routing mode, canonical URL,
-  and manifest colors.
+  manifest colors, and the theme icon pack.
 - `institution`: name, logo, logo alt text, header sizing, hero text, and hero
   description.
 - `branding`: colors, font stacks, and optional institution-hosted font
@@ -105,6 +105,11 @@ Configure these sections first:
   institutions, media, and blog modules.
 - `footer`: logo, link groups, address lines, network members, copyright, and
   original-record links.
+
+Create the matching favicon, Apple touch icon, and PWA PNGs under
+`public/theme-icons/<theme-id>/`, then point `site.icons` at those files. The
+site generator writes a manifest for each theme so installed PWAs reopen with
+the chosen `ogm_theme`.
 
 Use localized objects for user-facing copy, even when launching English-only:
 

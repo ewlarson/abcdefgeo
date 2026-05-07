@@ -29,6 +29,21 @@ export interface ThemeFooterGroup {
   links: ThemeLink[];
 }
 
+export interface ThemeManifestIcon {
+  src: string;
+  sizes: string;
+  type?: string;
+  purpose?: string;
+}
+
+export interface ThemeIconPack {
+  manifest?: string;
+  favicon?: string;
+  favicon_svg?: string;
+  apple_touch_icon?: string;
+  pwa?: ThemeManifestIcon[];
+}
+
 export interface ThemePartnerInstitution {
   slug: string;
   name: string;
@@ -99,6 +114,7 @@ export interface ThemeConfig {
     routing?: {
       mode?: RouteMode;
     };
+    icons?: ThemeIconPack;
     manifest?: {
       display?: 'standalone' | 'browser' | 'minimal-ui' | 'fullscreen';
       background_color?: string;
@@ -247,10 +263,37 @@ export const THEME_STORAGE_KEY = 'ogm.theme';
 export const THEME_COOKIE_KEY = 'ogm.theme';
 const THEME_CHANGED_EVENT = 'ogm:theme-changed';
 const THEME_STYLESHEET_ATTR = 'data-ogm-theme-stylesheet';
+const THEME_HEAD_LINK_ATTR = 'data-ogm-theme-head-link';
+const THEME_HEAD_META_ATTR = 'data-ogm-theme-head-meta';
 const DEFAULT_FONT_STACK =
   '"Work Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 const DEFAULT_HEADING_STACK = DEFAULT_FONT_STACK;
 const DEFAULT_UI_STACK = DEFAULT_FONT_STACK;
+const FALLBACK_ICON_PACK: Required<
+  Pick<ThemeIconPack, 'manifest' | 'favicon' | 'apple_touch_icon' | 'pwa'>
+> &
+  Pick<ThemeIconPack, 'favicon_svg'> = {
+  manifest: '/manifest.webmanifest',
+  favicon: '/favicon.ico',
+  apple_touch_icon: '/apple-touch-icon-180x180.png',
+  pwa: [
+    {
+      src: '/pwa-64x64.png',
+      sizes: '64x64',
+      type: 'image/png',
+    },
+    {
+      src: '/pwa-192x192.png',
+      sizes: '192x192',
+      type: 'image/png',
+    },
+    {
+      src: '/pwa-512x512.png',
+      sizes: '512x512',
+      type: 'image/png',
+    },
+  ],
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -479,6 +522,92 @@ function syncThemeStylesheets(urls: string[] | undefined): void {
   });
 }
 
+function setManagedHeadLink(
+  key: string,
+  attrs: Record<string, string | undefined>
+): void {
+  if (typeof document === 'undefined') return;
+
+  const selector = `link[${THEME_HEAD_LINK_ATTR}="${key}"]`;
+  let link = document.head.querySelector<HTMLLinkElement>(selector);
+  const href = attrs.href;
+
+  if (!href) {
+    link?.remove();
+    return;
+  }
+
+  if (!link) {
+    link = document.createElement('link');
+    link.setAttribute(THEME_HEAD_LINK_ATTR, key);
+    document.head.appendChild(link);
+  }
+
+  ['rel', 'href', 'sizes', 'type', 'purpose'].forEach((name) => {
+    const value = attrs[name];
+    if (value) {
+      link.setAttribute(name, value);
+    } else {
+      link.removeAttribute(name);
+    }
+  });
+}
+
+function setManagedHeadMeta(key: string, content: string | undefined): void {
+  if (typeof document === 'undefined') return;
+
+  const selector = `meta[${THEME_HEAD_META_ATTR}="${key}"]`;
+  let meta = document.head.querySelector<HTMLMetaElement>(selector);
+
+  if (!content) {
+    meta?.remove();
+    return;
+  }
+
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.name = key;
+    meta.setAttribute(THEME_HEAD_META_ATTR, key);
+    document.head.appendChild(meta);
+  }
+
+  meta.content = content;
+}
+
+function syncThemeHeadLinks(theme: ThemeConfig): void {
+  const iconPack = getThemeIconPack(theme.id || getDefaultThemeId());
+  const resolvedManifest = resolveThemeAssetUrl(iconPack.manifest);
+  const resolvedFavicon = resolveThemeAssetUrl(iconPack.favicon);
+  const resolvedSvgFavicon = resolveThemeAssetUrl(iconPack.favicon_svg);
+  const resolvedAppleTouchIcon = resolveThemeAssetUrl(
+    iconPack.apple_touch_icon
+  );
+
+  setManagedHeadLink('manifest', {
+    rel: 'manifest',
+    href: resolvedManifest,
+  });
+  setManagedHeadLink('favicon-svg', {
+    rel: 'icon',
+    type: 'image/svg+xml',
+    href: resolvedSvgFavicon,
+  });
+  setManagedHeadLink('favicon', {
+    rel: resolvedSvgFavicon ? 'alternate icon' : 'icon',
+    href: resolvedFavicon,
+    sizes: '48x48',
+  });
+  setManagedHeadLink('apple-touch-icon', {
+    rel: 'apple-touch-icon',
+    href: resolvedAppleTouchIcon,
+  });
+
+  setManagedHeadMeta(
+    'theme-color',
+    theme.site?.manifest?.theme_color || theme.branding?.colors?.primary
+  );
+}
+
 export function getThemeIds(): ThemeId[] {
   return Object.keys(registry.themes);
 }
@@ -550,7 +679,42 @@ export function getThemeCanonicalUrl(themeId: ThemeId): string | undefined {
   return getThemeConfig(themeId).site?.canonical_url;
 }
 
+export function getThemeIconPack(themeId: ThemeId): ThemeIconPack {
+  const icons = getThemeConfig(themeId).site?.icons || {};
+  const pwaIcons =
+    Array.isArray(icons.pwa) && icons.pwa.length > 0
+      ? icons.pwa
+      : FALLBACK_ICON_PACK.pwa;
+
+  return {
+    manifest: icons.manifest || FALLBACK_ICON_PACK.manifest,
+    favicon: icons.favicon || FALLBACK_ICON_PACK.favicon,
+    favicon_svg: icons.favicon_svg,
+    apple_touch_icon:
+      icons.apple_touch_icon || FALLBACK_ICON_PACK.apple_touch_icon,
+    pwa: pwaIcons,
+  };
+}
+
+function getThemeIdFromLocation(): ThemeId | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    const params = new URLSearchParams(window.location.search);
+    const requested = params.get('ogm_theme');
+    return isKnownThemeId(requested) ? requested : null;
+  } catch {
+    return null;
+  }
+}
+
 export function getActiveThemeId(): ThemeId {
+  const urlTheme = getThemeIdFromLocation();
+  if (urlTheme) {
+    safeWriteLocalStorage(THEME_STORAGE_KEY, urlTheme);
+    safeWriteCookie(THEME_COOKIE_KEY, urlTheme);
+    return urlTheme;
+  }
+
   const stored = safeReadLocalStorage(THEME_STORAGE_KEY);
   if (stored && isKnownThemeId(stored)) return stored;
   return getDefaultThemeId();
@@ -697,6 +861,7 @@ export function applyThemeToDom(themeId: ThemeId): void {
     '--hero-bg-image',
     heroBackgroundImage ? `url("${heroBackgroundImage}")` : 'none'
   );
+  syncThemeHeadLinks(theme);
   syncThemeStylesheets(theme.branding?.assets?.font_stylesheets);
 }
 
