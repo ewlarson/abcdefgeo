@@ -188,6 +188,49 @@ describe('GeospatialFilterMap client', () => {
     });
   });
 
+  it('forwards router search params to the hex request in hash-routed deployments', async () => {
+    vi.useFakeTimers();
+    const originalReadyState = document.readyState;
+    Object.defineProperty(document, 'readyState', {
+      configurable: true,
+      value: 'complete',
+    });
+    const advQuery = JSON.stringify([
+      { op: 'AND', f: 'dct_title_s', q: 'water' },
+      { op: 'AND', f: 'dcat_theme_sm', q: 'Inland Waters' },
+    ]);
+
+    render(
+      <MemoryRouter
+        initialEntries={[
+          `/search?adv_q=${encodeURIComponent(advQuery)}&q=&view=gallery`,
+        ]}
+      >
+        <Routes>
+          <Route path="/search" element={<GeospatialFilterMap />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await act(async () => {
+      vi.advanceTimersByTime(250);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(fetchMapH3).toHaveBeenCalledTimes(1);
+    const queryString = vi.mocked(fetchMapH3).mock.calls[0][3];
+    expect(queryString).toBeDefined();
+    const forwardedParams = new URLSearchParams(queryString);
+    expect(forwardedParams.get('adv_q')).toBe(advQuery);
+    expect(forwardedParams.get('q')).toBe('');
+
+    Object.defineProperty(document, 'readyState', {
+      configurable: true,
+      value: originalReadyState,
+    });
+  });
+
   it('updates geo relation to within when toggle is clicked', async () => {
     render(
       <MemoryRouter

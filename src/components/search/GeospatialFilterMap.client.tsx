@@ -457,8 +457,7 @@ export function GeospatialFilterMap({
         bounds.getNorth()
       );
       const resolution = zoomToResolution(zoom);
-      const queryString =
-        typeof window !== 'undefined' ? window.location.search.slice(1) : '';
+      const queryString = searchParams.toString();
 
       setHexLoading(true);
       try {
@@ -466,7 +465,7 @@ export function GeospatialFilterMap({
           query,
           bbox,
           resolution,
-          queryString ? `?${queryString}` : undefined
+          queryString || undefined
         );
         if (cancelled) return;
 
