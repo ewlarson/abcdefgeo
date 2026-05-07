@@ -10,10 +10,12 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { SearchField } from '../../components/SearchField';
 
 const fetchNominatimSearchMock = vi.fn();
+const fetchSuggestionsMock = vi.fn();
 
 vi.mock('../../services/api', () => ({
   fetchNominatimSearch: (...args: unknown[]) =>
     fetchNominatimSearchMock(...args),
+  fetchSuggestions: (...args: unknown[]) => fetchSuggestionsMock(...args),
 }));
 
 function LocationProbe() {
@@ -30,9 +32,8 @@ function LocationProbe() {
 describe('SearchField', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    global.fetch = vi.fn().mockResolvedValue({
-      json: async () => ({ data: [] }),
-    }) as unknown as typeof fetch;
+    fetchNominatimSearchMock.mockResolvedValue({ data: [] });
+    fetchSuggestionsMock.mockResolvedValue([]);
 
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
@@ -50,7 +51,7 @@ describe('SearchField', () => {
     });
   });
 
-  it('defaults header place bbox searches to overlap', async () => {
+  it('applies only a bbox filter when selecting a place suggestion', async () => {
     fetchNominatimSearchMock.mockResolvedValue({
       data: [
         {
@@ -102,30 +103,22 @@ describe('SearchField', () => {
       </MemoryRouter>
     );
 
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: /Place \(location filter\): Add a place/i,
-      })
-    );
-
-    fireEvent.change(
-      screen.getByRole('textbox', {
-        name: 'Location: search for a place to limit your search',
-      }),
-      {
-        target: { value: 'Illinois' },
-      }
-    );
+    const searchInput = screen.getByRole('searchbox', { name: 'Search input' });
+    fireEvent.focus(searchInput);
+    fireEvent.change(searchInput, {
+      target: { value: 'Illinois' },
+    });
 
     await waitFor(
       () => {
-        expect(fetchNominatimSearchMock).toHaveBeenCalledWith('Illinois', 10);
+        expect(fetchNominatimSearchMock).toHaveBeenCalledWith('Illinois', 5);
       },
       { timeout: 1200 }
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: /Illinois/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Submit search' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: /Illinois \(Region\)/i })
+    );
 
     await waitFor(() => {
       const probe = screen.getByTestId('location-probe');
@@ -137,21 +130,52 @@ describe('SearchField', () => {
       expect(params.get('include_filters[geo][type]')).toBe('bbox');
       expect(params.get('include_filters[geo][field]')).toBe('dcat_bbox');
       expect(params.get('include_filters[geo][relation]')).toBe('intersects');
+      expect(params.get('q')).toBe('');
     });
   });
 
   it('shows grouped autosuggest actions and supports scoped title search', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      json: async () => ({
-        data: [
-          {
-            id: 'suggestion-1',
-            type: 'suggestion',
-            attributes: { text: 'chicago manual of style', score: 6 },
+    fetchNominatimSearchMock.mockResolvedValue({
+      data: [
+        {
+          id: 'chicago',
+          type: 'gazetteer_place',
+          attributes: {
+            id: 1,
+            wok_id: 1,
+            parent_id: 0,
+            name: 'Chicago',
+            placetype: 'city',
+            country: 'United States',
+            repo: 'nominatim',
+            latitude: 41.88,
+            longitude: -87.63,
+            min_latitude: 41.64,
+            min_longitude: -87.94,
+            max_latitude: 42.02,
+            max_longitude: -87.52,
+            is_current: 1,
+            is_deprecated: 0,
+            is_ceased: 0,
+            is_superseded: 0,
+            is_superseding: 0,
+            superseded_by: null,
+            supersedes: null,
+            lastmodified: 0,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z',
+            display_name: 'Chicago, Cook County, Illinois, United States',
           },
-        ],
-      }),
-    }) as unknown as typeof fetch;
+        },
+      ],
+    });
+    fetchSuggestionsMock.mockResolvedValue([
+      {
+        id: 'suggestion-1',
+        type: 'suggestion',
+        attributes: { text: 'chicago manual of style', score: 6 },
+      },
+    ]);
 
     render(
       <MemoryRouter initialEntries={['/']}>
@@ -181,6 +205,9 @@ describe('SearchField', () => {
           screen.getByRole('button', { name: /chicago in title/i })
         ).toBeInTheDocument();
         expect(
+          screen.getByRole('button', { name: /chicago in subject\/theme/i })
+        ).toBeInTheDocument();
+        expect(
           screen.getByRole('button', {
             name: /see all results for chicago/i,
           })
@@ -190,9 +217,26 @@ describe('SearchField', () => {
     );
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/suggest?q=chicago', {
-        headers: { Accept: 'application/json' },
-      });
+      const suggestionsHeading = screen.getByText('Suggestions');
+      const searchOnlyInHeading = screen.getByText('Search Only In');
+      const geographicAreasHeading = screen.getByText('Geographic Areas');
+
+      expect(
+        suggestionsHeading.compareDocumentPosition(searchOnlyInHeading) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(
+        searchOnlyInHeading.compareDocumentPosition(geographicAreasHeading) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      expect(screen.getByText('Via OpenStreetMap')).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /chicago \(city\)/i })
+      ).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(fetchSuggestionsMock).toHaveBeenCalledWith('chicago');
     });
 
     fireEvent.click(screen.getByRole('button', { name: /chicago in title/i }));
@@ -209,6 +253,47 @@ describe('SearchField', () => {
     });
   });
 
+  it('supports scoped Subject/Theme search across both fields', async () => {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route
+            path="*"
+            element={
+              <>
+                <SearchField />
+                <LocationProbe />
+              </>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const searchInput = screen.getByRole('searchbox', { name: 'Search input' });
+    fireEvent.focus(searchInput);
+    fireEvent.change(searchInput, {
+      target: { value: 'philadelphia' },
+    });
+
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: /philadelphia in subject\/theme/i,
+      })
+    );
+
+    await waitFor(() => {
+      const probe = screen.getByTestId('location-probe');
+      expect(probe).toHaveAttribute('data-pathname', '/search');
+
+      const params = new URLSearchParams(
+        probe.getAttribute('data-search') ?? ''
+      );
+      expect(params.get('q')).toBe('philadelphia');
+      expect(params.get('search_field')).toBe('dct_subject_sm,dcat_theme_sm');
+    });
+  });
+
   it('does not fetch keyword suggestions on initial mount from URL state alone', async () => {
     render(
       <MemoryRouter initialEntries={['/search?q=chicago']}>
@@ -222,7 +307,8 @@ describe('SearchField', () => {
       await new Promise((resolve) => setTimeout(resolve, 350));
     });
 
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(fetchSuggestionsMock).not.toHaveBeenCalled();
+    expect(fetchNominatimSearchMock).not.toHaveBeenCalled();
   });
 
   it('renders an explicit advanced search button label', () => {

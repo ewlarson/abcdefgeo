@@ -56,6 +56,7 @@ export const messages = {
       openMedia: 'Open featured media',
     },
     search: {
+      customArea: 'Custom area',
       didYouMean: 'Did you mean:',
       geographicAreas: 'Geographic Areas',
       in: 'in',
@@ -152,6 +153,7 @@ export const messages = {
       openMedia: 'Abrir contenido destacado',
     },
     search: {
+      customArea: 'Área personalizada',
       didYouMean: 'Quizás quiso decir:',
       geographicAreas: 'Áreas geográficas',
       in: 'en',

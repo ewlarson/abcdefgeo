@@ -97,7 +97,8 @@ export function useI18nContext(): I18nContextValue {
     locale: 'en',
     locales: ['en'],
     setLocale: () => {},
-    t: (key: string) => key,
+    t: (key: string, vars?: Record<string, string | number>) =>
+      translate('en', 'en', key, vars),
     text: (value: LocalizedText | undefined) =>
       typeof value === 'string'
         ? value
