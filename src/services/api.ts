@@ -9,7 +9,7 @@ import {
 import { AdvancedClause, FacetFilter } from '../types/search';
 import { getActiveThemeConfig } from '../config/institution';
 import { debugLog, isDebugLoggingEnabled } from '../utils/logger';
-import { getTurnstileSessionToken } from './turnstile';
+import { getTurnstileSessionToken, isTurnstileConfigured } from './turnstile';
 
 export class ApiError extends Error {
   constructor(
@@ -83,14 +83,17 @@ function buildApiHeaders(urlObj: URL): HeadersInit {
     }
   }
 
-  const turnstileSessionToken = getTurnstileSessionToken();
+  const turnstileSessionToken = isTurnstileConfigured()
+    ? getTurnstileSessionToken()
+    : undefined;
   if (turnstileSessionToken) {
     headers['X-Turnstile-Session'] = turnstileSessionToken;
   }
 
   // Note: Content-Type is intentionally omitted for cross-origin requests to
-  // avoid CORS preflight latency. When Turnstile is enabled, its session header
-  // is allowed to preflight because protected API requests need to carry it.
+  // avoid CORS preflight latency. Only configured Turnstile deployments attach
+  // the session header; stale browser session storage from another deployment
+  // must not force public static sites into a failing preflight.
   return headers;
 }
 

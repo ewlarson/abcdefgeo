@@ -5,6 +5,7 @@ import {
   fetchFacetValues,
   fetchHomeBlogPosts,
   fetchMapH3,
+  fetchResourceDetails,
   fetchSearchResults,
 } from '../../services/api';
 import type { FacetValuesResponse } from '../../types/api';
@@ -404,6 +405,51 @@ describe('fetchFeaturedResourcePreview', () => {
     expect(url.pathname).toBe('/api/v1/resources/resource-1');
     expect(url.searchParams.get('format')).toBe('json');
     expect(url.searchParams.get('ui_profile')).toBe('homepage');
+  });
+});
+
+describe('fetchResourceDetails', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.sessionStorage.clear();
+    Object.defineProperty(window, 'location', {
+      value: {
+        origin: 'https://ewlarson.github.io',
+        hostname: 'ewlarson.github.io',
+      },
+      writable: true,
+    });
+  });
+
+  it('does not send stale Turnstile session headers when Turnstile is not configured', async () => {
+    window.sessionStorage.setItem('ogm_turnstile_session', 'stale-token');
+
+    (global.fetch as any).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: {
+          id: 'princeton-08612q67f',
+          type: 'resource',
+          attributes: {
+            ogm: {
+              id: 'princeton-08612q67f',
+              dct_title_s: 'Resource',
+            },
+          },
+        },
+      }),
+    });
+
+    await fetchResourceDetails('princeton-08612q67f');
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    const requestInit = (global.fetch as any).mock.calls[0][1];
+    expect(requestInit.headers).toMatchObject({
+      Accept: 'application/vnd.api+json, application/json',
+    });
+    expect(requestInit.headers).not.toHaveProperty('X-Turnstile-Session');
+    expect(requestInit.mode).toBe('cors');
+    expect(requestInit.credentials).toBe('omit');
   });
 });
 

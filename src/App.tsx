@@ -18,6 +18,17 @@ import { TestPage } from './pages/TestPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { TurnstileGate } from './components/security/TurnstileGate';
 
+function ensureGeoblacklightModalRoot() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById('blacklight-modal')) return;
+
+  const modal = document.createElement('div');
+  modal.id = 'blacklight-modal';
+  modal.hidden = true;
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(modal);
+}
+
 function App() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -44,6 +55,8 @@ function App() {
           const { Application } = await import('@hotwired/stimulus');
           globalScope.Stimulus = Application.start();
         }
+
+        ensureGeoblacklightModalRoot();
 
         if (!globalScope.GeoblacklightCore) {
           const mod = await import(
