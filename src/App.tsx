@@ -13,7 +13,6 @@ import { HomePage } from './pages/HomePage';
 import { BookmarksPage } from './pages/BookmarksPage';
 import { FixturesTestPage } from './pages/FixturesTestPage';
 import { ProviderPillsTestPage } from './pages/ProviderPillsTestPage';
-import { MapPage } from './pages/MapPage';
 import { TestPage } from './pages/TestPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { TurnstileGate } from './components/security/TurnstileGate';
@@ -59,12 +58,11 @@ function App() {
         ensureGeoblacklightModalRoot();
 
         if (!globalScope.GeoblacklightCore) {
-          const mod = await import(
-            '@geoblacklight/frontend/app/javascript/geoblacklight/core'
-          );
+          const mod =
+            await import('@geoblacklight/frontend/app/javascript/geoblacklight/core');
           globalScope.GeoblacklightCore =
-            (mod as { default?: { activate?: (event: Event) => void } }).default ||
-            (mod as { activate?: (event: Event) => void });
+            (mod as { default?: { activate?: (event: Event) => void } })
+              .default || (mod as { activate?: (event: Event) => void });
         }
 
         setTimeout(() => {
@@ -101,7 +99,6 @@ function App() {
           />
           <Route path="/test/fixtures" element={<FixturesTestPage />} />
           <Route path="/test" element={<TestPage />} />
-          <Route path="/map" element={<MapPage />} />
           <Route
             path="/"
             element={

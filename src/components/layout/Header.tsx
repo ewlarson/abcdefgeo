@@ -56,6 +56,9 @@ export function Header() {
   const [searchParams] = useSearchParams();
   const { theme } = useTheme();
   const { t, text } = useI18n();
+  const banner = theme.site?.banner;
+  const bannerText = text(banner?.text);
+  const showBanner = banner?.enabled !== false && !!bannerText;
   const headerCfg = theme.institution?.header;
   const utilityLinks = theme.navigation?.utility_links || [];
   const navLinks = theme.navigation?.links || [
@@ -79,6 +82,10 @@ export function Header() {
     ctaStyle === 'utility'
       ? 'theme-ui mt-3 rounded-md px-4 py-2 text-sm font-medium uppercase tracking-[0.12em] text-white/90 hover:bg-white/10 hover:text-white'
       : 'theme-ui mt-3 inline-flex items-center justify-center rounded-sm border border-white/20 bg-white px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-900 transition-colors hover:bg-slate-100';
+  const bannerClass =
+    banner?.tone === 'neon'
+      ? 'theme-ui border-b-4 border-[#041e42] bg-[#007ab8] px-4 py-2 text-center text-[0.95rem] font-black text-white shadow-[0_0_18px_rgba(0,122,184,0.78),inset_0_-3px_0_rgba(4,30,66,0.88)] sm:text-base'
+      : 'theme-ui theme-page-surface theme-border border-b px-4 py-2 text-center text-sm font-semibold theme-text-strong';
 
   useEffect(() => {
     setMobileNavOpen(false);
@@ -172,6 +179,12 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 theme-header shadow-[0_10px_35px_rgba(0,0,0,0.18)]">
+      {showBanner && (
+        <div role="status" className={bannerClass}>
+          <p className="mx-auto max-w-[96rem] break-words">{bannerText}</p>
+        </div>
+      )}
+
       {(utilityLinks.length > 0 || ctaLink) && (
         <div className="theme-utility-row border-b border-white/10">
           <div className="w-full px-4 sm:px-6 lg:px-8">

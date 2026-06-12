@@ -33,6 +33,11 @@ site:
     display: standalone
     background_color: '#041E42'
     theme_color: '#041E42'
+  banner:
+    enabled: true
+    tone: neon
+    text:
+      en: 'NOTICE: This is an experimental proof-of-concept geoportal.'
 institution:
   name: University of Nevada, Reno Geoportal
   logo_url: /unr-block-n.svg
@@ -125,10 +130,6 @@ navigation:
     - href: /search?q=
       label:
         en: Search
-      external: false
-    - href: /map
-      label:
-        en: Map
       external: false
     - href: /bookmarks
       label:
