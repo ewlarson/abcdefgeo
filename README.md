@@ -98,6 +98,15 @@ The default backend API root is `https://ogm.geo4lib.app/api/v1/`. Override
 `api.base_url` in `theme.yaml` when an institution needs to point at a different
 compatible API deployment.
 
+Set `navigation.cta_style: utility` when a theme should keep the CTA in the
+right-side header slot but render it with the same compact treatment as utility
+links. Omit the field, or set it to `button`, for the default button treatment.
+
+Set `homepage.hero_map.center` as `[latitude, longitude]` and
+`homepage.hero_map.zoom` to choose the homepage map's initial camera. Use
+`homepage.hero_map.initial_pan_px: [0, 0]` when a theme should not apply the
+default horizontal map pan after initial render.
+
 Static browser deployments can also set `api.public_api_key` to a rate-limited,
 browser-safe key. The viewer sends it as `Authorization: Bearer <key>`. Treat
 this value as public because it is embedded in the built site and shares one
@@ -230,6 +239,10 @@ When adding a new theme:
 ## Deployment
 
 This app builds to `dist/` and can be hosted as static files.
+
+`npm run generate:site` writes a deny-all `public/robots.txt` so themable
+preview and pilot sites do not invite crawler traffic before an institution is
+ready to publish.
 
 The repository includes a GitHub Pages workflow in
 `.github/workflows/deploy.yml`. Review its branch trigger and required secrets

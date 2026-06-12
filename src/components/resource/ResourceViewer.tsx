@@ -7,18 +7,23 @@ import { leafletViewerOptions } from '../../config/leafletConfig';
 import { MetadataTable } from './MetadataTable';
 import { getWgs84ExtentFromViewerGeometry } from '../../utils/geometryUtils';
 import { fromExtent as polygonFromExtent } from 'ol/geom/Polygon';
-import { transformExtent, useGeographic } from 'ol/proj';
+import {
+  transformExtent,
+  useGeographic as enableGeographicProjection,
+} from 'ol/proj';
 import TileLayer from 'ol/layer/Tile';
 import WebGLTileLayer from 'ol/layer/WebGLTile.js';
 import XYZ from 'ol/source/XYZ';
 import GeoTIFF from 'ol/source/GeoTIFF.js';
 import { PMTilesVectorSource } from 'ol-pmtiles';
+import type MapBrowserEvent from 'ol/MapBrowserEvent';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style.js';
 import {
   buildPresentation3ManifestFromImageInfo,
   fetchIiifImageInfo,
   normalizeImageServiceId,
 } from '../../utils/iiif';
+import { ensureOpenLayersProjection } from '../../utils/openlayersProjection';
 
 interface ResourceViewerProps {
   data: {
@@ -28,6 +33,7 @@ interface ResourceViewerProps {
         id?: string;
         gbl_wxsIdentifier_s?: string;
         gbl_wxsidentifier_s?: string;
+        gbl_mdModified_dt?: string;
       };
       [key: string]: unknown;
     };
@@ -48,6 +54,16 @@ interface ResourceViewerProps {
 }
 
 type ViewerExtent = [number, number, number, number];
+type AnyJson = Record<string, unknown>;
+type ObservableMapSource = {
+  getState?: () => string;
+  on?: (type: string, listener: () => void) => void;
+  un?: (type: string, listener: () => void) => void;
+};
+type GeoJsonCandidate = {
+  type?: unknown;
+  coordinates?: unknown;
+};
 
 const OPENLAYERS_BASEMAP = {
   url: 'https://{a-d}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
@@ -121,11 +137,8 @@ function fitViewToWgs84Extent(params: {
     duration: 0,
   };
 
-  if (typeof (view as any).fitInternal === 'function') {
-    (view as any).fitInternal(
-      polygonFromExtent(extentInViewProjection),
-      fitOptions
-    );
+  if (typeof view.fitInternal === 'function') {
+    view.fitInternal(polygonFromExtent(extentInViewProjection), fitOptions);
   } else {
     view.fit(extentInViewProjection, fitOptions);
   }
@@ -141,12 +154,12 @@ function fitViewToWgs84Extent(params: {
   ];
   view.setCenter(fallbackCenter);
 
-  if (typeof (view as any).getResolutionForExtentInternal === 'function') {
+  if (typeof view.getResolutionForExtentInternal === 'function') {
     const paddedSize: [number, number] = [
       Math.max(fitSize[0] - 32, 1),
       Math.max(fitSize[1] - 32, 1),
     ];
-    const resolution = (view as any).getResolutionForExtentInternal(
+    const resolution = view.getResolutionForExtentInternal(
       extentInViewProjection,
       paddedSize
     );
@@ -157,7 +170,7 @@ function fitViewToWgs84Extent(params: {
 }
 
 function createPmTilesLayer(url: string) {
-  useGeographic();
+  enableGeographicProjection();
 
   return new VectorTileLayer({
     declutter: true,
@@ -184,13 +197,51 @@ function createPmTilesLayer(url: string) {
   });
 }
 
-function createCogLayer(url: string) {
-  return new WebGLTileLayer({
-    source: new GeoTIFF({
-      sources: [{ url }],
-      convertToRGB: true,
-    }),
+function createCogSource(url: string) {
+  return new GeoTIFF({
+    sources: [{ url }],
+    convertToRGB: true,
   });
+}
+
+function createCogLayer(source: ReturnType<typeof createCogSource>) {
+  return new WebGLTileLayer({
+    source,
+  });
+}
+
+async function prepareCogSource(source: ReturnType<typeof createCogSource>) {
+  const viewOptions = await source.getView();
+  const projection = viewOptions.projection;
+  const projectionCode =
+    typeof projection === 'string' ? projection : projection?.getCode?.();
+  await ensureOpenLayersProjection(projectionCode);
+}
+
+function appendQueryParam(url: string, key: string, value: string): string {
+  if (!url || !value) return url;
+
+  try {
+    const base =
+      typeof window !== 'undefined'
+        ? window.location.origin
+        : 'http://localhost';
+    const parsed = new URL(url, base);
+    parsed.searchParams.set(key, value);
+    return parsed.toString();
+  } catch {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+  }
+}
+
+function serializeForInlineScript(value: unknown): string {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003C')
+    .replace(/>/g, '\\u003E')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
 }
 
 function escapeHtml(value: string) {
@@ -224,17 +275,19 @@ function formatInspectionValue(value: unknown) {
 }
 
 function enablePmTilesInspection(map: OlMap) {
-  map.on('pointermove', (event: any) => {
-    const pixel = map.getEventPixel(event.originalEvent);
+  map.on('pointermove', (event) => {
+    const browserEvent = event as MapBrowserEvent<PointerEvent>;
+    const pixel = map.getEventPixel(browserEvent.originalEvent);
     const hit = map.hasFeatureAtPixel(pixel);
     map.getViewport().style.cursor = hit ? 'crosshair' : '';
   });
 
-  map.on('click', (event: any) => {
+  map.on('click', (event) => {
+    const browserEvent = event as MapBrowserEvent<PointerEvent>;
     const tableBody = document.querySelector('.attribute-table-body');
     if (!tableBody) return;
 
-    const features = map.getFeaturesAtPixel(event.pixel);
+    const features = map.getFeaturesAtPixel(browserEvent.pixel);
     if (!features.length) {
       tableBody.innerHTML =
         '<tr><td colspan="2">Could not find that feature</td></tr>';
@@ -277,88 +330,119 @@ function OpenLayersPreviewMap({
     }
 
     const isPmtilesProtocol = protocol.toLowerCase() === 'pmtiles';
-    const basemap = new TileLayer({
-      source: new XYZ(OPENLAYERS_BASEMAP),
-    });
-    const overlay = isPmtilesProtocol
-      ? createPmTilesLayer(endpoint)
-      : createCogLayer(endpoint);
-    const view = new View({
-      projection: 'EPSG:3857',
-      center: [0, 0],
-      zoom: 2,
-    });
-    const map = new OlMap({
-      target: element,
-      controls: defaultControls().extend([new FullScreen()]),
-      layers: [basemap, overlay],
-      view,
-    });
-
-    if (isPmtilesProtocol) {
-      try {
-        enablePmTilesInspection(map);
-      } catch (error) {
-        console.warn('PMTiles inspection setup failed:', error);
-      }
-    }
-
-    const refit = () => {
-      fitViewToWgs84Extent({
-        map,
-        view,
-        element,
-        wgs84Extent,
-      });
-      map.renderSync?.();
-    };
 
     let disposed = false;
-    const timeoutIds = [0, 100, 300].map((delay) =>
-      window.setTimeout(() => {
-        if (!disposed) refit();
-      }, delay)
-    );
-    let secondFrame = 0;
-    const firstFrame = window.requestAnimationFrame(() => {
-      refit();
-      secondFrame = window.requestAnimationFrame(() => {
-        if (!disposed) refit();
+    let cleanup = () => {};
+
+    const bootMap = async () => {
+      const basemap = new TileLayer({
+        source: new XYZ(OPENLAYERS_BASEMAP),
       });
-    });
 
-    const resizeObserver =
-      typeof ResizeObserver !== 'undefined'
-        ? new ResizeObserver(() => {
-            if (!disposed) refit();
-          })
-        : null;
-    resizeObserver?.observe(element);
+      let overlay:
+        | ReturnType<typeof createPmTilesLayer>
+        | ReturnType<typeof createCogLayer>;
 
-    const source = overlay.getSource?.();
-    const onSourceChange = () => {
-      const state = source?.getState?.();
-      if (state === 'ready') {
-        refit();
+      if (isPmtilesProtocol) {
+        overlay = createPmTilesLayer(endpoint);
+      } else {
+        const cogSource = createCogSource(endpoint);
+        try {
+          await prepareCogSource(cogSource);
+        } catch (error) {
+          console.warn(
+            'COG projection setup failed; raster may not align with the basemap:',
+            error
+          );
+        }
+        if (disposed) return;
+        overlay = createCogLayer(cogSource);
       }
+
+      if (disposed) return;
+
+      const view = new View({
+        projection: 'EPSG:3857',
+        center: [0, 0],
+        zoom: 2,
+      });
+      const map = new OlMap({
+        target: element,
+        controls: defaultControls().extend([new FullScreen()]),
+        layers: [basemap, overlay],
+        view,
+      });
+
+      if (isPmtilesProtocol) {
+        try {
+          enablePmTilesInspection(map);
+        } catch (error) {
+          console.warn('PMTiles inspection setup failed:', error);
+        }
+      }
+
+      const refit = () => {
+        fitViewToWgs84Extent({
+          map,
+          view,
+          element,
+          wgs84Extent,
+        });
+        map.renderSync?.();
+      };
+
+      const timeoutIds = [0, 100, 300].map((delay) =>
+        window.setTimeout(() => {
+          if (!disposed) refit();
+        }, delay)
+      );
+      let secondFrame = 0;
+      const firstFrame = window.requestAnimationFrame(() => {
+        refit();
+        secondFrame = window.requestAnimationFrame(() => {
+          if (!disposed) refit();
+        });
+      });
+
+      const resizeObserver =
+        typeof ResizeObserver !== 'undefined'
+          ? new ResizeObserver(() => {
+              if (!disposed) refit();
+            })
+          : null;
+      resizeObserver?.observe(element);
+
+      const source = overlay.getSource?.() as ObservableMapSource | null;
+      const onSourceChange = () => {
+        const state = source?.getState?.();
+        if (state === 'ready') {
+          refit();
+        }
+      };
+
+      if (source && typeof source.on === 'function') {
+        source.on('change', onSourceChange);
+      }
+
+      refit();
+
+      cleanup = () => {
+        window.cancelAnimationFrame(firstFrame);
+        window.cancelAnimationFrame(secondFrame);
+        timeoutIds.forEach((id) => window.clearTimeout(id));
+        resizeObserver?.disconnect();
+        if (source && typeof source.un === 'function') {
+          source.un('change', onSourceChange);
+        }
+        map.setTarget(undefined);
+      };
     };
 
-    if (source && typeof (source as any).on === 'function') {
-      (source as any).on('change', onSourceChange);
-    }
-
-    refit();
+    void bootMap();
 
     return () => {
       disposed = true;
-      window.cancelAnimationFrame(firstFrame);
-      window.cancelAnimationFrame(secondFrame);
-      timeoutIds.forEach((id) => window.clearTimeout(id));
-      resizeObserver?.disconnect();
-      if (source && typeof (source as any).un === 'function') {
-        (source as any).un('change', onSourceChange);
-      }
-      map.setTarget(undefined);
+      cleanup();
     };
   }, [endpoint, geometryForViewer, preCalculatedExtent, protocol]);
 
@@ -376,9 +460,18 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
     data.attributes.ogm?.gbl_wxsidentifier_s ||
     '';
   const resourceIdentifier = data.attributes.ogm?.id || '';
+  const resourceModified = data.attributes.ogm?.gbl_mdModified_dt || '';
+  const viewerEndpoint =
+    protocol === 'cog' && resourceIdentifier
+      ? appendQueryParam(
+          endpoint,
+          'ogm_v',
+          [resourceIdentifier, resourceModified].filter(Boolean).join(':')
+        )
+      : endpoint;
   const viewerInstanceKey = [
     protocol,
-    endpoint,
+    viewerEndpoint,
     layerIdentifier,
     resourceIdentifier,
     pageValue,
@@ -407,7 +500,8 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
   // until after mount (prevents hydration mismatches and guarantees DOM insertion
   // after controllers are registered).
   const [mounted, setMounted] = useState(false);
-  const [iiifManifestUrl, setIiifManifestUrl] = useState<string | null>(null);
+  const [iiifInlineManifest, setIiifInlineManifest] =
+    useState<AnyJson | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -415,12 +509,11 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
 
   useEffect(() => {
     if (!mounted || protocol !== 'iiif_image' || !endpoint) {
-      setIiifManifestUrl(null);
+      setIiifInlineManifest(null);
       return;
     }
 
     let cancelled = false;
-    let objectUrl: string | null = null;
 
     const loadManifest = async () => {
       try {
@@ -431,19 +524,14 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
           imageServiceId,
           info,
         });
-        objectUrl = URL.createObjectURL(
-          new Blob([JSON.stringify(manifest)], {
-            type: 'application/json',
-          })
-        );
 
         if (!cancelled) {
-          setIiifManifestUrl(objectUrl);
+          setIiifInlineManifest(manifest);
         }
       } catch (error) {
         console.error('Failed to build IIIF manifest for viewer:', error);
         if (!cancelled) {
-          setIiifManifestUrl(null);
+          setIiifInlineManifest(null);
         }
       }
     };
@@ -452,9 +540,6 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
 
     return () => {
       cancelled = true;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
     };
   }, [endpoint, mounted, protocol]);
 
@@ -502,10 +587,11 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
         );
       }
 
-      const manifestUrl =
-        protocol === 'iiif_image' ? iiifManifestUrl : endpoint;
+      const manifestUrl = protocol === 'iiif_image' ? null : endpoint;
+      const inlineManifest =
+        protocol === 'iiif_image' ? iiifInlineManifest : null;
 
-      if (!manifestUrl) {
+      if (!manifestUrl && !inlineManifest) {
         return (
           <div className="viewer h-[600px] text-gray-500">Loading viewer…</div>
         );
@@ -514,8 +600,8 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
       const miradorVersion = '3.4.3';
 
       // NOTE: srcDoc runs in an isolated document. We inject Mirador from a pinned CDN
-      // and mount it into a local container. `manifestUrl` is JSON-stringified so it
-      // can't break out of the inline script.
+      // and mount it into a local container. Inline IIIF image manifests create
+      // their Blob URL inside this sandboxed document so Mirador can fetch them.
       const srcDoc = `<!doctype html>
 <html lang="en">
   <head>
@@ -531,20 +617,40 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
     <div id="mirador-root"></div>
     <script>
       (function () {
-        var manifestUrl = ${JSON.stringify(manifestUrl)};
+        var manifestUrl = ${serializeForInlineScript(manifestUrl)};
+        var inlineManifest = ${serializeForInlineScript(inlineManifest)};
+        var manifestObjectUrl = null;
+
+        function getManifestUrl() {
+          if (inlineManifest) {
+            manifestObjectUrl = URL.createObjectURL(
+              new Blob([JSON.stringify(inlineManifest)], { type: "application/json" })
+            );
+            return manifestObjectUrl;
+          }
+          return manifestUrl;
+        }
+
+        window.addEventListener("pagehide", function () {
+          if (manifestObjectUrl) {
+            URL.revokeObjectURL(manifestObjectUrl);
+          }
+        });
+
         function boot() {
           var Mirador = window.Mirador;
           if (!Mirador || typeof Mirador.viewer !== "function") {
             console.error("Mirador global not available");
             return;
           }
-          if (!manifestUrl) {
+          var resolvedManifestUrl = getManifestUrl();
+          if (!resolvedManifestUrl) {
             console.error("Missing manifestUrl");
             return;
           }
           Mirador.viewer({
             id: "mirador-root",
-            windows: [{ manifestId: manifestUrl, thumbnailNavigationPosition: "far-bottom" }],
+            windows: [{ manifestId: resolvedManifestUrl, thumbnailNavigationPosition: "far-bottom" }],
             window: {
               hideSearchPanel: false,
               hideWindowTitle: true,
@@ -585,7 +691,7 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
       );
     }
 
-    case 'openlayers':
+    case 'openlayers': {
       if (!mounted) {
         return (
           <div className="viewer h-[600px] text-gray-500">Loading map…</div>
@@ -598,7 +704,7 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
       if (geometry) {
         try {
           // Handle geometry as object (GeoJSON) - the type definition says string but backend returns object
-          let geomObj: any;
+          let geomObj: unknown;
           if (typeof geometry === 'string') {
             // Skip empty strings
             if (!geometry.trim()) {
@@ -617,13 +723,14 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
           }
 
           if (geomObj && typeof geomObj === 'object' && geomObj !== null) {
+            const candidate = geomObj as GeoJsonCandidate;
             // Check if geometry is already a Feature or FeatureCollection
             if (
-              geomObj.type === 'Feature' ||
-              geomObj.type === 'FeatureCollection'
+              candidate.type === 'Feature' ||
+              candidate.type === 'FeatureCollection'
             ) {
               geometryForViewer = JSON.stringify(geomObj);
-            } else if (geomObj.type && geomObj.coordinates) {
+            } else if (candidate.type && candidate.coordinates) {
               // It's a raw geometry (Polygon, Point, etc.), wrap it in a Feature
               // Note: OpenLayers GeoJSON reader expects Feature or FeatureCollection
               const feature = {
@@ -634,8 +741,8 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
               geometryForViewer = JSON.stringify(feature);
             } else {
               console.warn('Geometry object missing type or coordinates:', {
-                hasType: !!geomObj.type,
-                hasCoordinates: !!geomObj.coordinates,
+                hasType: !!candidate.type,
+                hasCoordinates: !!candidate.coordinates,
                 keys: Object.keys(geomObj),
               });
             }
@@ -672,11 +779,12 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
         <OpenLayersPreviewMap
           key={viewerInstanceKey}
           protocol={protocol}
-          endpoint={endpoint}
+          endpoint={viewerEndpoint}
           geometryForViewer={geometryForViewer}
           preCalculatedExtent={preCalculatedExtent}
         />
       );
+    }
     case 'oembed-viewer':
       if (!mounted) {
         return (
@@ -688,7 +796,7 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
           key={viewerInstanceKey}
           className="viewer h-[600px]"
           data-controller="oembed-viewer"
-          data-oembed-viewer-url-value={endpoint}
+          data-oembed-viewer-url-value={viewerEndpoint}
         />
       );
     case 'leaflet':
@@ -719,7 +827,9 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
             )}
             data-leaflet-viewer-page-value={pageValue}
             data-leaflet-viewer-draw-initial-bounds-value={true}
-            {...(endpoint ? { 'data-leaflet-viewer-url-value': endpoint } : {})}
+            {...(viewerEndpoint
+              ? { 'data-leaflet-viewer-url-value': viewerEndpoint }
+              : {})}
             {...(protocol
               ? {
                   'data-leaflet-viewer-protocol-value':

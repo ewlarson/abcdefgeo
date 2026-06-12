@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Seo } from '../components/Seo';
 import { useParams, Link, useLocation, useNavigate } from 'react-router';
 import { ArrowLeft, ArrowRight, ArrowLeftCircle, XCircle } from 'lucide-react';
@@ -47,6 +47,8 @@ interface SearchState {
   view?: 'list' | 'gallery' | 'map';
 }
 
+const SIMILAR_ITEM_ID_SEPARATOR = '\u001f';
+
 // Define the ResourceData type to match the actual API response
 interface ResourceData extends GeoDocument {
   meta?: {
@@ -87,6 +89,19 @@ interface ResourceData extends GeoDocument {
       }>;
     };
   };
+}
+
+function getSimilarItemIds(resource: ResourceData | null): string[] {
+  const similarItems = resource?.meta?.ui?.similar_items;
+  if (!Array.isArray(similarItems)) return [];
+
+  return Array.from(
+    new Set(
+      similarItems
+        .map((item) => item?.id)
+        .filter((itemId): itemId is string => Boolean(itemId))
+    )
+  );
 }
 
 // New component for index map
@@ -157,8 +172,15 @@ export function ResourceView({
   const [error, setError] = useState<string | null>(null);
   const [isDataDictionaryModalOpen, setIsDataDictionaryModalOpen] =
     useState(false);
+  const [scopedSimilarItems, setScopedSimilarItems] = useState<
+    GeoDocument[] | null
+  >(null);
   const { setLastApiUrl } = useApi();
   const trackedResourceViewRef = useRef<string | null>(null);
+  const similarItemIdsKey = useMemo(
+    () => getSimilarItemIds(data).join(SIMILAR_ITEM_ID_SEPARATOR),
+    [data]
+  );
 
   // Get configured perPage or default to 10
   const perPage = searchState?.perPage || 10;
@@ -426,6 +448,66 @@ export function ResourceView({
     });
   }, [absoluteCurrentIndex, data?.id, searchState]);
 
+  useEffect(() => {
+    let isMounted = true;
+    const similarItemIds = similarItemIdsKey
+      ? similarItemIdsKey.split(SIMILAR_ITEM_ID_SEPARATOR)
+      : [];
+
+    if (similarItemIds.length === 0) {
+      setScopedSimilarItems([]);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    setScopedSimilarItems(null);
+
+    const loadScopedSimilarItems = async () => {
+      const sourceSearchParams = new URLSearchParams();
+      sourceSearchParams.set('q', '');
+      similarItemIds.forEach((similarItemId) => {
+        sourceSearchParams.append('include_filters[id][]', similarItemId);
+      });
+
+      try {
+        const results = await fetchSearchResults(
+          '',
+          1,
+          similarItemIds.length,
+          [],
+          setLastApiUrl,
+          undefined,
+          [],
+          [],
+          undefined,
+          sourceSearchParams
+        );
+        const resultsById = new Map(
+          results.data.map((item) => [item.id, item])
+        );
+        const orderedScopedItems = similarItemIds
+          .map((similarItemId) => resultsById.get(similarItemId))
+          .filter((item): item is GeoDocument => Boolean(item));
+
+        if (isMounted) {
+          setScopedSimilarItems(orderedScopedItems);
+        }
+      } catch (error) {
+        console.error('Error fetching scoped similar items:', error);
+        if (isMounted) {
+          setScopedSimilarItems([]);
+        }
+      }
+    };
+
+    void loadScopedSimilarItems();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [similarItemIdsKey, setLastApiUrl]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -681,15 +763,9 @@ export function ResourceView({
           )}
 
           {/* Similar Items Carousel - Full width above footer */}
-          {data?.meta?.ui?.similar_items &&
-            Array.isArray(data.meta.ui.similar_items) &&
-            data.meta.ui.similar_items.length > 0 && (
-              <SimilarItemsCarousel
-                similarItems={
-                  data.meta.ui.similar_items as unknown as GeoDocument[]
-                }
-              />
-            )}
+          {scopedSimilarItems && scopedSimilarItems.length > 0 && (
+            <SimilarItemsCarousel similarItems={scopedSimilarItems} />
+          )}
         </div>
       </main>
 

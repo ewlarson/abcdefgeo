@@ -79,6 +79,12 @@ export interface FeaturedMapCameraConfig {
   verticalOffsetPx?: number;
 }
 
+export interface ThemeHeroMapConfig {
+  center?: [number, number];
+  zoom?: number;
+  initial_pan_px?: [number, number];
+}
+
 export interface ThemeFeaturedItemConfig {
   id: string;
   camera?: FeaturedMapCameraConfig;
@@ -195,6 +201,7 @@ export interface ThemeConfig {
   navigation?: {
     utility_links?: ThemeLink[];
     cta?: ThemeLink;
+    cta_style?: 'button' | 'utility';
     links?: ThemeLink[];
   };
   homepage?: {
@@ -205,6 +212,7 @@ export interface ThemeConfig {
       link_url: string;
     };
     hero_background_image_url?: string;
+    hero_map?: ThemeHeroMapConfig;
     hero_actions?: ThemeLink[];
     featured_resource_ids?: string[];
     featured_items?: ThemeFeaturedItemConfig[];

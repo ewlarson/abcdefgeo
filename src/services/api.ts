@@ -146,7 +146,7 @@ function appendForwardedSearchFilters(
   target: URLSearchParams,
   source: URLSearchParams
 ) {
-  Array.from(source.keys())
+  Array.from(new Set(source.keys()))
     .filter(
       (key) =>
         key.startsWith('include_filters[') ||
