@@ -5,7 +5,8 @@ import { MemoryRouter } from 'react-router';
 import { ResourceView } from '../../pages/ResourceView';
 import { ApiProvider } from '../../context/ApiContext';
 import { DebugProvider } from '../../context/DebugContext';
-import { vi } from 'vitest';
+import { vi, type MockedFunction } from 'vitest';
+import type * as ApiModule from '../../services/api';
 import type { GeoDocument } from '../../types/api';
 
 vi.mock('../../services/analytics', () => ({
@@ -16,6 +17,7 @@ vi.mock('../../services/analytics', () => ({
 vi.mock('../../services/api', () => ({
   fetchResourceDetails: vi.fn(),
   fetchSearchResults: vi.fn(),
+  getApiBasePath: vi.fn(() => 'https://ogm.geo4lib.app/api/v1'),
   ApiError: class ApiError extends Error {
     constructor(message: string) {
       super(message);
@@ -327,8 +329,10 @@ const TestWrapper = ({
 );
 
 describe('ResourceView Component', () => {
-  let fetchResourceDetails: any;
-  let fetchSearchResults: any;
+  let fetchResourceDetails: MockedFunction<
+    typeof ApiModule.fetchResourceDetails
+  >;
+  let fetchSearchResults: MockedFunction<typeof ApiModule.fetchSearchResults>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -1012,6 +1016,90 @@ describe('ResourceView Component', () => {
       // We can check for the presence of the component by looking for common table elements
       const tables = document.querySelectorAll('table');
       expect(tables.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Similar Items', () => {
+    it('fetches similar item candidates through scoped search before rendering them', async () => {
+      const resourceWithSimilarItems = {
+        ...mockResourceData,
+        meta: {
+          ...mockResourceData.meta,
+          ui: {
+            ...mockResourceData.meta?.ui,
+            similar_items: [
+              {
+                id: 'unr-allowed',
+                attributes: { dct_title_s: 'Raw similar title' },
+                meta: { ui: {} },
+              },
+              {
+                id: 'outside-scope',
+                attributes: { dct_title_s: 'Should not render' },
+                meta: { ui: {} },
+              },
+            ],
+          },
+        },
+      } as unknown as GeoDocument;
+      const scopedSimilarItem: GeoDocument = {
+        id: 'unr-allowed',
+        type: 'document',
+        attributes: {
+          ogm: {
+            id: 'unr-allowed',
+            dct_title_s: 'Scoped UNR similar item',
+            schema_provider_s: 'University of Nevada, Reno',
+            gbl_resourceClass_sm: ['Datasets'],
+          },
+        },
+        meta: {
+          ui: {
+            thumbnail_url: null,
+          },
+        },
+      };
+      fetchResourceDetails.mockResolvedValue(resourceWithSimilarItems);
+      fetchSearchResults.mockResolvedValue({
+        data: [scopedSimilarItem],
+        meta: { total: 1, page: 1, per_page: 2 },
+        included: [],
+      });
+
+      render(
+        <TestWrapper>
+          <ResourceView />
+        </TestWrapper>
+      );
+
+      expect(
+        await screen.findByText(
+          'Scoped UNR similar item',
+          {},
+          { timeout: 3000 }
+        )
+      ).toBeInTheDocument();
+      expect(screen.queryByText('Raw similar title')).not.toBeInTheDocument();
+      expect(screen.queryByText('Should not render')).not.toBeInTheDocument();
+
+      const scopedSearchCall = fetchSearchResults.mock.calls.find(
+        (call) =>
+          call[9] instanceof URLSearchParams &&
+          call[9].getAll('include_filters[id][]').includes('unr-allowed')
+      );
+
+      expect(scopedSearchCall).toBeDefined();
+      expect(scopedSearchCall?.[0]).toBe('');
+      expect(scopedSearchCall?.[1]).toBe(1);
+      expect(scopedSearchCall?.[2]).toBe(2);
+      expect(scopedSearchCall?.[4]).toEqual(expect.any(Function));
+
+      const sourceSearchParams = scopedSearchCall?.[9] as URLSearchParams;
+      expect(sourceSearchParams.get('q')).toBe('');
+      expect(sourceSearchParams.getAll('include_filters[id][]')).toEqual([
+        'unr-allowed',
+        'outside-scope',
+      ]);
     });
   });
 

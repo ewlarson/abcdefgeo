@@ -10,6 +10,15 @@ const mocks = vi.hoisted(() => {
   const useGeographic = vi.fn();
   const transformExtent = vi.fn((extent: number[]) => extent);
   const geoTiff = vi.fn();
+  const geoTiffSource = {
+    getView: vi.fn(() =>
+      Promise.resolve({
+        projection: {
+          getCode: () => 'EPSG:26911',
+        },
+      })
+    ),
+  };
   const pmtilesVectorSource = vi.fn();
   const vectorTileLayer = vi.fn();
   const webglTileLayer = vi.fn();
@@ -57,6 +66,7 @@ const mocks = vi.hoisted(() => {
   const olMap = vi.fn(() => map);
   const olView = vi.fn(() => view);
 
+  geoTiff.mockImplementation(() => geoTiffSource);
   vectorTileLayer.mockImplementation(() => overlay);
   webglTileLayer.mockImplementation(() => overlay);
 
@@ -66,6 +76,7 @@ const mocks = vi.hoisted(() => {
     fit,
     fitInternal,
     geoTiff,
+    geoTiffSource,
     map,
     olMap,
     olView,
@@ -169,6 +180,17 @@ const cogDataWithGeometry = {
   },
 } as Parameters<typeof ResourceViewer>[0]['data'];
 
+const cogDataWithResourceVersion = {
+  ...cogDataWithGeometry,
+  attributes: {
+    ...cogDataWithGeometry.attributes,
+    ogm: {
+      id: 'unr-06625ac6-4cee-4eda-aea3-bfd18a903aed',
+      gbl_mdModified_dt: '2026-05-17T15:11:10.701000',
+    },
+  },
+} as Parameters<typeof ResourceViewer>[0]['data'];
+
 const pmtilesDataWithGeometry = {
   attributes: { dct_references_s: {} },
   meta: {
@@ -185,6 +207,30 @@ const pmtilesDataWithGeometry = {
               [-93.1943, 45.0512],
               [-93.1943, 44.8908],
               [-93.3291, 44.8908],
+            ],
+          ],
+        },
+      },
+    },
+  },
+} as Parameters<typeof ResourceViewer>[0]['data'];
+
+const iiifImageDataWithGeometry = {
+  attributes: { dct_references_s: {} },
+  meta: {
+    ui: {
+      viewer: {
+        protocol: 'iiif_image',
+        endpoint: 'https://example.com/iiif/info.json',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [-117, 36.75],
+              [-116.75, 36.75],
+              [-116.75, 37],
+              [-117, 37],
+              [-117, 36.75],
             ],
           ],
         },
@@ -255,6 +301,14 @@ const secondWmsDataWithGeometry = {
   },
 } as Parameters<typeof ResourceViewer>[0]['data'];
 
+async function flushReactWork() {
+  for (let i = 0; i < 4; i += 1) {
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+}
+
 describe('ResourceViewer', () => {
   let rectSpy: ReturnType<typeof vi.spyOn>;
 
@@ -295,6 +349,57 @@ describe('ResourceViewer', () => {
     mocks.map.getSize.mockReturnValue(undefined);
     mocks.view.getCenterInternal.mockReturnValue([-10381844.95, 5616966.0]);
     mocks.overlaySource.getState.mockReturnValue('ready');
+    mocks.geoTiffSource.getView.mockResolvedValue({
+      projection: {
+        getCode: () => 'EPSG:26911',
+      },
+    });
+  });
+
+  describe('Mirador viewer bootstrap', () => {
+    it('creates synthetic IIIF image manifests inside the sandboxed iframe', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          '@context': 'http://iiif.io/api/image/2/context.json',
+          '@id': 'https://example.com/iiif',
+          width: 1200,
+          height: 800,
+          profile: ['http://iiif.io/api/image/2/level0.json'],
+        }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      const { container } = render(
+        <ResourceViewer data={iiifImageDataWithGeometry} pageValue="SHOW" />
+      );
+
+      await flushReactWork();
+
+      const iframe = container.querySelector('iframe.viewer');
+      expect(iframe).not.toBeNull();
+      expect(iframe?.getAttribute('sandbox')).toBe('allow-scripts');
+
+      const srcDoc = iframe?.getAttribute('srcdoc') || '';
+      expect(srcDoc).toContain('var inlineManifest = {');
+      expect(srcDoc).toContain('URL.createObjectURL');
+      expect(srcDoc).toContain(
+        '"id":"https://example.com/iiif/info.json/manifest"'
+      );
+      expect(srcDoc).toContain(
+        '"id":"https://example.com/iiif/full/full/0/default.jpg"'
+      );
+      expect(srcDoc).toContain('"type":"ImageService2"');
+      expect(srcDoc).not.toContain('blob:http://localhost');
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://example.com/iiif/info.json',
+        {
+          headers: {
+            Accept: 'application/json',
+          },
+        }
+      );
+    });
   });
 
   describe('OpenLayers viewer bootstrap', () => {
@@ -316,6 +421,24 @@ describe('ResourceViewer', () => {
         size: [1094, 600],
         maxZoom: 19,
       });
+    });
+
+    it('adds a stable resource version to COG URLs before loading GeoTIFF data', async () => {
+      render(
+        <ResourceViewer data={cogDataWithResourceVersion} pageValue="SHOW" />
+      );
+
+      await act(async () => {
+        await vi.runAllTimersAsync();
+      });
+
+      expect(mocks.geoTiff).toHaveBeenCalled();
+      const call = mocks.geoTiff.mock.calls[0][0];
+      const url = new URL(call.sources[0].url);
+      expect(url.origin + url.pathname).toBe('https://example.com/cog.tif');
+      expect(url.searchParams.get('ogm_v')).toBe(
+        'unr-06625ac6-4cee-4eda-aea3-bfd18a903aed:2026-05-17T15:11:10.701000'
+      );
     });
 
     it('boots PMTiles through the local layer path and enables geographic mode', async () => {

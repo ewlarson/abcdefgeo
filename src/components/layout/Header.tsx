@@ -62,12 +62,23 @@ export function Header() {
     { href: '/bookmarks', label: t('common.bookmarks'), external: false },
   ];
   const ctaLink = theme.navigation?.cta;
+  const ctaStyle = theme.navigation?.cta_style || 'button';
   const logoUrl = resolveThemeAssetUrl(theme.institution.logo_url);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const navPanelRef = useRef<HTMLDivElement>(null);
   const headerTextStyle = {
     color: 'var(--color-header-text)',
   } as CSSProperties;
+  const utilityLinkClass =
+    'theme-ui text-[0.72rem] uppercase tracking-[0.14em] transition-opacity hover:opacity-100 opacity-90';
+  const desktopCtaClass =
+    ctaStyle === 'utility'
+      ? utilityLinkClass
+      : 'theme-ui inline-flex items-center rounded-sm border border-white/15 bg-white/10 px-3 py-2 text-[0.74rem] font-semibold uppercase tracking-[0.14em] text-white transition-colors hover:bg-white hover:text-slate-900';
+  const mobileCtaClass =
+    ctaStyle === 'utility'
+      ? 'theme-ui mt-3 rounded-md px-4 py-2 text-sm font-medium uppercase tracking-[0.12em] text-white/90 hover:bg-white/10 hover:text-white'
+      : 'theme-ui mt-3 inline-flex items-center justify-center rounded-sm border border-white/20 bg-white px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-900 transition-colors hover:bg-slate-100';
 
   useEffect(() => {
     setMobileNavOpen(false);
@@ -174,7 +185,7 @@ export function Header() {
                     renderThemeLink(
                       link,
                       text(link.label),
-                      'theme-ui text-[0.72rem] uppercase tracking-[0.14em] transition-opacity hover:opacity-100 opacity-90',
+                      utilityLinkClass,
                       undefined
                     )
                   )}
@@ -187,7 +198,7 @@ export function Header() {
                 ? renderThemeLink(
                     ctaLink,
                     text(ctaLink.label),
-                    'theme-ui inline-flex items-center rounded-sm border border-white/15 bg-white/10 px-3 py-2 text-[0.74rem] font-semibold uppercase tracking-[0.14em] text-white transition-colors hover:bg-white hover:text-slate-900',
+                    desktopCtaClass,
                     undefined
                   )
                 : null}
@@ -202,7 +213,7 @@ export function Header() {
             <Link
               to="/"
               onClick={handleHomeClick}
-              className={`flex min-w-0 shrink-0 items-center text-xl font-bold${
+              className={`flex w-full min-w-0 items-center text-xl font-bold${
                 headerCfg?.lockup_gap_rem == null ? ' gap-3' : ''
               }`}
               style={
@@ -246,9 +257,9 @@ export function Header() {
                       }}
                     />
                   )}
-                  <span className="flex min-w-0 flex-col leading-none">
+                  <span className="flex min-w-0 flex-1 flex-col leading-none">
                     <span
-                      className={`inline-block font-semibold tracking-wide${
+                      className={`block min-w-0 max-w-full font-semibold tracking-wide${
                         headerCfg?.lockup_text_size_rem == null
                           ? ' text-sm sm:text-base md:text-lg lg:text-xl'
                           : ''
@@ -297,7 +308,7 @@ export function Header() {
           </div>
 
           <div className="col-span-12 order-3 flex min-w-0 items-center justify-center xl:order-none xl:col-span-6">
-            <div className="relative top-0 w-full xl:top-4">
+            <div className="relative top-0 w-full xl:top-[1.8125rem]">
               <SearchField
                 placeholder={t('common.searchPlaceholder')}
                 onSearch={handleSearch}
@@ -308,7 +319,7 @@ export function Header() {
           </div>
 
           <nav
-            className="hidden xl:flex col-span-3 items-center justify-end gap-1 pt-2"
+            className="hidden xl:flex relative top-[1.5625rem] col-span-3 items-center justify-end gap-1 pt-2"
             aria-label={t('common.mainNavigation')}
           >
             {navLinks.map((link) =>
@@ -406,7 +417,7 @@ export function Header() {
             ? renderThemeLink(
                 ctaLink,
                 text(ctaLink.label),
-                'theme-ui mt-3 inline-flex items-center justify-center rounded-sm border border-white/20 bg-white px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-900 transition-colors hover:bg-slate-100',
+                mobileCtaClass,
                 undefined,
                 () => setMobileNavOpen(false)
               )

@@ -6,6 +6,9 @@ const rootDir = process.cwd();
 const themePath = path.join(rootDir, 'theme.yaml');
 const themesDir = path.join(rootDir, 'themes');
 const publicDir = path.join(rootDir, 'public');
+const robotsTxt = `User-agent: *
+Disallow: /
+`;
 
 function resolveLocalizedText(value, locale = 'en') {
   if (!value) return '';
@@ -325,6 +328,10 @@ async function copyThemeIconPackToRoot(theme) {
   }
 }
 
+async function writeRobotsTxt() {
+  await fs.writeFile(path.join(publicDir, 'robots.txt'), robotsTxt);
+}
+
 async function main() {
   const registry = await loadThemeRegistry();
   const themeId =
@@ -351,6 +358,7 @@ async function main() {
   });
 
   await fs.mkdir(publicDir, { recursive: true });
+  await writeRobotsTxt();
   await Promise.all(
     Object.entries(registry.themes).map(([id, themeConfig]) =>
       writeThemeManifest(id, themeConfig)

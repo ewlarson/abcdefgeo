@@ -204,18 +204,27 @@ function HexHoverCard({ hoveredHex }: { hoveredHex: HexHoverData }) {
 function MapPanner({
   programmaticFlyRef,
   onInitialViewReady,
+  initialPanPx,
 }: {
   programmaticFlyRef: React.MutableRefObject<boolean>;
   onInitialViewReady: (center: [number, number], zoom: number) => void;
+  initialPanPx: [number, number];
 }) {
   const map = useMap();
   const panned = useRef(false);
   useEffect(() => {
     if (panned.current) return;
     map.whenReady(() => {
-      programmaticFlyRef.current = true;
-      map.panBy([400, 0], { animate: false });
       panned.current = true;
+      if (initialPanPx[0] === 0 && initialPanPx[1] === 0) {
+        const center = map.getCenter();
+        onInitialViewReady([center.lat, center.lng], map.getZoom());
+        programmaticFlyRef.current = false;
+        return;
+      }
+
+      programmaticFlyRef.current = true;
+      map.panBy(initialPanPx, { animate: false });
       const onMoveEnd = () => {
         const center = map.getCenter();
         onInitialViewReady([center.lat, center.lng], map.getZoom());
@@ -224,7 +233,7 @@ function MapPanner({
       };
       map.on('moveend', onMoveEnd);
     });
-  }, [map, onInitialViewReady, programmaticFlyRef]);
+  }, [initialPanPx, map, onInitialViewReady, programmaticFlyRef]);
   return null;
 }
 
@@ -371,6 +380,11 @@ export function HomePageHexMapBackground() {
   const [hexLayerEnabled, setHexLayerEnabled] = useState(
     getSavedHexLayerEnabled
   );
+  const homeMapCenter =
+    theme.homepage?.hero_map?.center ?? HOME_PAGE_MAP_CENTER;
+  const homeMapZoom = theme.homepage?.hero_map?.zoom ?? DEFAULT_US_ZOOM;
+  const homeMapInitialPanPx =
+    theme.homepage?.hero_map?.initial_pan_px ?? ([400, 0] as [number, number]);
   const initialHomeViewRef = useRef<{
     center: [number, number];
     zoom: number;
@@ -512,8 +526,8 @@ export function HomePageHexMapBackground() {
         aria-label="Resource density hex map"
       >
         <MapContainer
-          center={HOME_PAGE_MAP_CENTER}
-          zoom={DEFAULT_US_ZOOM}
+          center={homeMapCenter}
+          zoom={homeMapZoom}
           className="homepage-map h-full w-full"
           zoomControl={false}
           dragging={true}
@@ -548,6 +562,7 @@ export function HomePageHexMapBackground() {
           />
           <MapPanner
             programmaticFlyRef={programmaticFlyRef}
+            initialPanPx={homeMapInitialPanPx}
             onInitialViewReady={(center, zoom) => {
               if (!initialHomeViewRef.current) {
                 initialHomeViewRef.current = { center, zoom };
@@ -940,7 +955,7 @@ export function HomePageHexMapBackground() {
                 setActiveIndex(
                   (prev) =>
                     (prev - 1 + featuredItems.length) % featuredItems.length
-                  );
+                );
                 featuredStartTimeRef.current = Date.now();
                 featuredTotalPausedRef.current = 0;
                 setFeaturedProgress(1);

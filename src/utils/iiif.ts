@@ -19,8 +19,47 @@ function getInfoDimensions(info: AnyJson): {
   };
 }
 
-function inferImageUrl(serviceId: string): string {
-  return `${serviceId.replace(/\/$/, '')}/full/max/0/default.jpg`;
+function getImageApiVersion(info: AnyJson): 2 | 3 {
+  const context = info['@context'];
+  const contextValues = Array.isArray(context) ? context : [context];
+  if (
+    contextValues.some(
+      (value) => typeof value === 'string' && value.includes('/image/2')
+    )
+  ) {
+    return 2;
+  }
+
+  if (info['@id'] && !info.id) {
+    return 2;
+  }
+
+  return 3;
+}
+
+function getImageServiceProfile(info: AnyJson): string | null {
+  const profile = info.profile;
+  if (isString(profile)) return profile;
+  if (Array.isArray(profile)) {
+    const firstString = profile.find(isString);
+    return firstString || null;
+  }
+  return null;
+}
+
+function buildImageService(info: AnyJson, imageServiceId: string): AnyJson {
+  const version = getImageApiVersion(info);
+  const profile = getImageServiceProfile(info);
+  return {
+    id: imageServiceId,
+    type: version === 2 ? 'ImageService2' : 'ImageService3',
+    ...(profile ? { profile } : {}),
+  };
+}
+
+function inferImageUrl(serviceId: string, info: AnyJson): string {
+  const size = getImageApiVersion(info) === 2 ? 'full' : 'max';
+  return `${serviceId.replace(/\/$/, '')}/full/${size}/0/default.jpg`;
 }
 
 export function buildPresentation3ManifestFromImageInfo(args: {
@@ -56,15 +95,10 @@ export function buildPresentation3ManifestFromImageInfo(args: {
                 motivation: 'painting',
                 target: canvasId,
                 body: {
-                  id: inferImageUrl(imageServiceId),
+                  id: inferImageUrl(imageServiceId, info),
                   type: 'Image',
                   format: 'image/jpeg',
-                  service: [
-                    {
-                      id: imageServiceId,
-                      type: 'ImageService3',
-                    },
-                  ],
+                  service: [buildImageService(info, imageServiceId)],
                 },
               },
             ],
