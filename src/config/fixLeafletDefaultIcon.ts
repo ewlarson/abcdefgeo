@@ -7,7 +7,7 @@
  *
  * This module patches L.Icon.Default to use CDN URLs. Import it once at app
  * startup (e.g. main.tsx) so all Leaflet usage—homepage featured map,
- * MapPage, resource leaflet-viewer, etc.—gets correct marker icons.
+ * search map filters, resource leaflet-viewer, etc.—gets correct marker icons.
  */
 import L from 'leaflet';
 

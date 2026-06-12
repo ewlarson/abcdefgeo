@@ -84,6 +84,7 @@ BTAA Geoportal behavior and localization.
 Theme configuration controls:
 
 - site title, description, locale support, and web app manifest colors
+- optional localized sitewide notice banners
 - theme-specific favicon, Apple touch icon, and PWA install icons
 - institution name, logo, header lockup, and hero copy
 - brand colors, fonts, and optional institution-hosted font stylesheets
@@ -106,6 +107,19 @@ Set `homepage.hero_map.center` as `[latitude, longitude]` and
 `homepage.hero_map.zoom` to choose the homepage map's initial camera. Use
 `homepage.hero_map.initial_pan_px: [0, 0]` when a theme should not apply the
 default horizontal map pan after initial render.
+
+Set `site.banner` when a theme needs a sitewide message above the header. The
+banner text supports localized values. Use `tone: neon` only for temporary,
+high-visibility notices such as experimental proof-of-concept deployments.
+
+```yaml
+site:
+  banner:
+    enabled: true
+    tone: neon
+    text:
+      en: 'NOTICE: This is an experimental proof-of-concept.'
+```
 
 Static browser deployments can also set `api.public_api_key` to a rate-limited,
 browser-safe key. The viewer sends it as `Authorization: Bearer <key>`. Treat

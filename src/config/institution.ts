@@ -126,6 +126,11 @@ export interface ThemeConfig {
       background_color?: string;
       theme_color?: string;
     };
+    banner?: {
+      enabled?: boolean;
+      text: LocalizedText;
+      tone?: 'notice' | 'neon';
+    };
   };
   institution: {
     name: string;
