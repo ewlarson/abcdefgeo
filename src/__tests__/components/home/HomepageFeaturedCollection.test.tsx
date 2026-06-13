@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import { HomepageFeaturedCollection } from '../../../components/home/HomepageFeaturedCollection';
 import { ThemeProvider } from '../../../context/ThemeContext';
 import { I18nProvider } from '../../../context/I18nContext';
@@ -12,11 +13,13 @@ describe('HomepageFeaturedCollection', () => {
 
   it('renders all highlighted collections and CTA links', () => {
     render(
-      <ThemeProvider initialThemeId="btaa">
-        <I18nProvider>
-          <HomepageFeaturedCollection />
-        </I18nProvider>
-      </ThemeProvider>
+      <MemoryRouter>
+        <ThemeProvider initialThemeId="btaa">
+          <I18nProvider>
+            <HomepageFeaturedCollection />
+          </I18nProvider>
+        </ThemeProvider>
+      </MemoryRouter>
     );
 
     expect(

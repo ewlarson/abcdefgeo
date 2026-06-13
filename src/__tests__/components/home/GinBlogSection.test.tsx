@@ -64,6 +64,6 @@ describe('GinBlogSection', () => {
         ctaUrl="https://gin.btaa.org/blog/"
       />
     );
-    expect(screen.getByText('Loading stories...')).toBeInTheDocument();
+    expect(screen.getByText('Loading stories…')).toBeInTheDocument();
   });
 });

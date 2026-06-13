@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { parseSearchParams, buildSearchParams } from '../../utils/searchParams';
 import { SearchParams } from '../../types/search';
+import { SEARCH_RESULTS_PER_PAGE } from '../../constants/search';
 
 describe('searchParams', () => {
   beforeEach(() => {
@@ -284,7 +285,7 @@ describe('searchParams', () => {
       const params: SearchParams = {
         query: 'test query',
         page: 1,
-        perPage: 10,
+        perPage: SEARCH_RESULTS_PER_PAGE,
         facets: [],
       };
 

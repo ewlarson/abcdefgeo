@@ -219,6 +219,7 @@ npm run dev             # generate site files and start Vite
 npm run build           # generate site files and build static assets
 npm run preview         # preview the built site
 npm run test            # run Vitest
+npm run test:ci         # run Vitest once with coverage thresholds
 npm run lint            # run ESLint
 npm run lint:fix        # run ESLint with automatic fixes
 npm run format          # run Prettier

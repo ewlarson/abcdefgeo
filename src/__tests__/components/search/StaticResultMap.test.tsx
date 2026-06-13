@@ -27,9 +27,12 @@ describe('StaticResultMap', () => {
     const { container } = render(<StaticResultMap result={result} />);
 
     const image = container.querySelector(
-      'img[src="/static-maps/no-geometry-result/geometry"]'
+      'img[src="/api/v1/static-maps/no-geometry-result/geometry"]'
     );
-    expect(image).toHaveAttribute('src', '/static-maps/no-geometry-result/geometry');
+    expect(image).toHaveAttribute(
+      'src',
+      '/api/v1/static-maps/no-geometry-result/geometry'
+    );
     expect(image).toHaveAttribute('alt', '');
     expect(image).not.toHaveStyle({ display: 'none' });
     expect(screen.queryByText('No map data')).not.toBeInTheDocument();

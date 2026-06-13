@@ -1,10 +1,4 @@
-import {
-  act,
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-} from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { GalleryView } from '../../../components/search/GalleryView';
 import { BrowserRouter } from 'react-router';
 import { vi, describe, it, expect } from 'vitest';
@@ -51,12 +45,25 @@ const mockResults: GeoDocument[] = Array.from({ length: 25 }, (_, i) => ({
   links: { self: '#' },
 }));
 
+const withResourceClassIcon = (result: GeoDocument): GeoDocument => ({
+  ...result,
+  meta: {
+    ...result.meta,
+    ui: {
+      ...result.meta?.ui,
+      resource_class_icon_url: `http://localhost:8000/api/v1/static-maps/${result.id}/resource-class-icon`,
+    },
+  },
+});
+
 describe('GalleryView', () => {
   beforeEach(() => {
     vi.useRealTimers();
   });
 
-  const renderGallery = (props: any = {}) => {
+  const renderGallery = (
+    props: Partial<React.ComponentProps<typeof GalleryView>> = {}
+  ) => {
     return render(
       <BrowserRouter>
         <GalleryView
@@ -76,29 +83,33 @@ describe('GalleryView', () => {
     expect(screen.getAllByText('Result 1').length).toBeGreaterThan(0);
   });
 
-  it('uses the grid fallback asset when a result has no real thumbnail', () => {
-    const { container } = renderGallery({
+  it('uses the inline placeholder when no thumbnail or resource-class asset is available', () => {
+    renderGallery({
       results: [mockResults[0]],
       totalResults: 1,
     });
 
-    const thumbnail = container.querySelector(
-      'img[src="/static-maps/result-1/resource-class-icon"]'
-    );
-    expect(thumbnail).toBeInTheDocument();
+    expect(
+      screen.getByTestId('gallery-thumbnail-placeholder-0')
+    ).toBeInTheDocument();
   });
 
-  it('does not overlay the inline resource icon while the fallback asset loads', () => {
+  it('does not overlay the inline resource icon while the resource-class asset loads', () => {
     const completeSpy = vi
       .spyOn(HTMLImageElement.prototype, 'complete', 'get')
       .mockReturnValue(false);
 
     try {
       renderGallery({
-        results: [mockResults[0]],
+        results: [withResourceClassIcon(mockResults[0])],
         totalResults: 1,
       });
 
+      expect(
+        document.querySelector(
+          'img[src="/api/v1/static-maps/result-1/resource-class-icon"]'
+        )
+      ).toBeInTheDocument();
       expect(
         screen.queryByTestId('gallery-thumbnail-placeholder-0')
       ).not.toBeInTheDocument();
@@ -107,11 +118,13 @@ describe('GalleryView', () => {
     }
   });
 
-  it('routes the generic resource thumbnail endpoint through the gallery thumbnail route', () => {
+  it('uses the resource-class icon when a gallery thumbnail URL is the generic resource thumbnail endpoint', () => {
     const resultWithGenericThumbnail: GeoDocument = {
-      ...mockResults[0],
+      ...withResourceClassIcon(mockResults[0]),
       meta: {
+        ...withResourceClassIcon(mockResults[0]).meta,
         ui: {
+          ...withResourceClassIcon(mockResults[0]).meta?.ui,
           thumbnail_url:
             'http://localhost:8000/api/v1/resources/result-1/thumbnail',
         },
@@ -124,16 +137,18 @@ describe('GalleryView', () => {
     });
 
     const thumbnail = container.querySelector(
-      'img[src="/resources/result-1/thumbnail"]'
+      'img[src="/api/v1/static-maps/result-1/resource-class-icon"]'
     );
     expect(thumbnail).toBeInTheDocument();
   });
 
-  it('routes raw bridge thumbnail assets through the gallery thumbnail route', () => {
+  it('uses the resource-class icon when a gallery thumbnail URL is a raw bridge asset', () => {
     const resultWithBridgeThumbnail: GeoDocument = {
-      ...mockResults[0],
+      ...withResourceClassIcon(mockResults[0]),
       meta: {
+        ...withResourceClassIcon(mockResults[0]).meta,
         ui: {
+          ...withResourceClassIcon(mockResults[0]).meta?.ui,
           thumbnail_url:
             'https://geobtaa-assets-prod.s3.us-east-2.amazonaws.com/store/asset/test/huge-image.jpg',
         },
@@ -146,7 +161,7 @@ describe('GalleryView', () => {
     });
 
     const thumbnail = container.querySelector(
-      'img[src="/resources/result-1/thumbnail"]'
+      'img[src="/api/v1/static-maps/result-1/resource-class-icon"]'
     );
     expect(thumbnail).toBeInTheDocument();
   });
@@ -219,11 +234,13 @@ describe('GalleryView', () => {
   it('defers below-the-fold gallery images until after initial paint', () => {
     vi.useFakeTimers();
 
-    const { container } = renderGallery();
+    const { container } = renderGallery({
+      results: mockResults.slice(0, 20).map(withResourceClassIcon),
+    });
 
     expect(
       container.querySelector(
-        'img[src="/static-maps/result-16/resource-class-icon"]'
+        'img[src="/api/v1/static-maps/result-16/resource-class-icon"]'
       )
     ).not.toBeInTheDocument();
 
@@ -233,7 +250,7 @@ describe('GalleryView', () => {
 
     expect(
       container.querySelector(
-        'img[src="/static-maps/result-16/resource-class-icon"]'
+        'img[src="/api/v1/static-maps/result-16/resource-class-icon"]'
       )
     ).not.toBeInTheDocument();
 
@@ -243,7 +260,7 @@ describe('GalleryView', () => {
 
     expect(
       container.querySelector(
-        'img[src="/static-maps/result-16/resource-class-icon"]'
+        'img[src="/api/v1/static-maps/result-16/resource-class-icon"]'
       )
     ).toBeInTheDocument();
   });
@@ -269,8 +286,11 @@ describe('GalleryView', () => {
     expect(global.IntersectionObserver).toHaveBeenCalled();
 
     // Simulate intersection
-    const observerCallback = (global.IntersectionObserver as any).mock
-      .calls[0][0];
+    const observerCallback = (
+      global.IntersectionObserver as unknown as {
+        mock: { calls: Array<[IntersectionObserverCallback]> };
+      }
+    ).mock.calls[0][0];
     const entry = { isIntersecting: true };
     observerCallback([entry]);
 
@@ -281,8 +301,11 @@ describe('GalleryView', () => {
     const onLoadMore = vi.fn();
     renderGallery({ onLoadMore, hasMore: true, isLoading: true });
 
-    const observerCallback = (global.IntersectionObserver as any).mock
-      .calls[0][0];
+    const observerCallback = (
+      global.IntersectionObserver as unknown as {
+        mock: { calls: Array<[IntersectionObserverCallback]> };
+      }
+    ).mock.calls[0][0];
     observerCallback([{ isIntersecting: true }]);
 
     expect(onLoadMore).not.toHaveBeenCalled();

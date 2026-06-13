@@ -509,7 +509,7 @@ describe('SearchResults Component', () => {
       );
 
       const thumbnail = container.querySelector(
-        'img[src="/thumbnails/nyu-2451-34564"]'
+        'img[src="/api/v1/thumbnails/nyu-2451-34564"]'
       );
       expect(thumbnail).toBeInTheDocument();
       expect(thumbnail).toHaveAttribute('alt', '');
@@ -544,7 +544,7 @@ describe('SearchResults Component', () => {
       );
 
       const thumbnail = container.querySelector(
-        'img[src="/thumbnails/nyu-2451-34564"]'
+        'img[src="/api/v1/thumbnails/nyu-2451-34564"]'
       );
       expect(thumbnail).toBeInTheDocument();
     });
@@ -578,7 +578,7 @@ describe('SearchResults Component', () => {
       );
 
       const thumbnail = container.querySelector(
-        'img[src="/thumbnails/nyu-2451-34564"]'
+        'img[src="/api/v1/thumbnails/nyu-2451-34564"]'
       );
       expect(thumbnail).toBeInTheDocument();
       expect(thumbnail).toHaveAttribute('alt', '');
@@ -884,11 +884,11 @@ describe('SearchResults Component', () => {
       );
 
       const thumbnail = container.querySelector(
-        'img[src="/thumbnails/missing-thumb-test"]'
+        'img[src="/api/v1/thumbnails/missing-thumb-test"]'
       );
       expect(thumbnail).toHaveAttribute(
         'src',
-        '/thumbnails/missing-thumb-test'
+        '/api/v1/thumbnails/missing-thumb-test'
       );
       expect(thumbnail).toHaveAttribute('alt', '');
     });
