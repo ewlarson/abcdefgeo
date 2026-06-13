@@ -33,21 +33,26 @@ site:
     display: standalone
     background_color: '#041E42'
     theme_color: '#041E42'
+  banner:
+    enabled: true
+    tone: neon
+    text:
+      en: 'NOTICE: This is an experimental proof-of-concept geoportal.'
 institution:
   name: University of Nevada, Reno Geoportal
   logo_url: /unr-block-n.svg
   logo_alt:
     en: University of Nevada, Reno Block N
   logo_lockup:
-    separator: pipe
+    separator: none
     right_text:
-      en: University of Nevada, Reno
+      en: Nevada’s Geospatial Repository
     right_text_style:
       font_family: '"myriad-pro", Arial, sans-serif'
       font_weight: 700
       letter_spacing: 0.01em
     subtext:
-      en: University Libraries
+      en: University of Nevada, Reno
     subtext_style:
       font_family: '"myriad-pro-condensed", "Arial Narrow", Arial, sans-serif'
       font_weight: 700
@@ -103,13 +108,10 @@ api:
   turnstile_status_path: /turnstile/status
   turnstile_verify_path: /turnstile/verify
   client_name: unr-geoportal
-  default_query_params: []
+  default_query_params:
+    - include_filters[schema_provider_s][]=University of Nevada, Reno
 navigation:
   utility_links:
-    - href: https://www.unr.edu/nevada-today
-      label:
-        en: News
-      external: true
     - href: https://library.unr.edu/
       label:
         en: Libraries
@@ -123,14 +125,11 @@ navigation:
     label:
       en: University Home
     external: true
+  cta_style: utility
   links:
     - href: /search?q=
       label:
         en: Search
-      external: false
-    - href: /map
-      label:
-        en: Map
       external: false
     - href: /bookmarks
       label:
@@ -141,7 +140,14 @@ navigation:
         en: Research Help
       external: true
 homepage:
-  hero_background_image_url: https://www.unr.edu/web-team/uploads/facebook-open-graph.jpg
+  hero_map:
+    center:
+      - 39.3
+      - -116.6
+    zoom: 7
+    initial_pan_px:
+      - 0
+      - 0
   hero_actions:
     - href: /search?q=
       label:
@@ -152,19 +158,39 @@ homepage:
         en: Campus map
       external: true
   featured_items:
-    - id: a10a0f50-994e-0134-2096-0050569601ca-c
+    - id: unr-e7bd5441-b68d-4f98-8e12-9f6fc20550f7
       camera:
         mode: fitBounds
+        maxZoom: 7
+        padding:
+          - 48
+          - 48
         duration: 1.5
-    - id: c69b75a12ca64324a0109d48db735f6d_0
+    - id: unr-4edc3124-1978-4759-8467-fbd861d63643
+      camera:
+        mode: fitBounds
+        maxZoom: 7
+        padding:
+          - 48
+          - 48
+        duration: 1.5
+    - id: unr-df264816-eeb7-42c3-ab64-3a23423259c1
       camera:
         mode: flyTo
-        minZoom: 3
-        maxZoom: 10
-        padding:
-          - 24
-          - 24
-        verticalOffsetPx: -120
+        center:
+          - 39.75
+          - -119.75
+        zoom: 10
+        maxZoom: 11
+        duration: 1
+    - id: unr-06625ac6-4cee-4eda-aea3-bfd18a903aed
+      camera:
+        mode: flyTo
+        center:
+          - 35.9729
+          - -114.8411
+        zoom: 12
+        maxZoom: 12
         duration: 1
   collection_spotlights:
     - title:

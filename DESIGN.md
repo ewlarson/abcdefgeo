@@ -178,6 +178,7 @@ The overall impression should be sturdy, quiet, and intentionally understated.
 
 - **Header:** The institutional lockup is the brand anchor. It should coexist with search without making the page feel top-heavy. Navigation should stay compact and utility-oriented.
 - Institutions may use a two-tier header pattern when it reflects their web system: a slim utility row for campus-level links and a primary row that keeps the geo search front and center.
+- A sitewide notice banner may sit above the header when it is configured by the active theme. Strong neon treatment should be reserved for temporary experimental or critical notices, and the text must remain readable, localized, and dismissing-free unless persistence is added deliberately.
 - **Search Field:** This is a primary action surface, not a tiny utility input. It should feel inviting, fast, and reliable, with strong focus states and enough height for comfortable use on mobile.
 - **Facet Controls and Chips:** Filters should read as tools for narrowing a catalog, not as playful tags. Use calm backgrounds, visible selection states, and generous hit areas.
 - **Result Cards and Lists:** Lead with title, resource type, institution, and thumbnail when available. Metadata should support the title, not compete with it.

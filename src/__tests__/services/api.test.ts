@@ -6,12 +6,25 @@ import {
   fetchHomeBlogPosts,
   fetchMapH3,
   fetchResourceDetails,
+  fetchResourceJson,
   fetchSearchResults,
 } from '../../services/api';
+import { THEME_STORAGE_KEY } from '../../config/institution';
 import type { FacetValuesResponse } from '../../types/api';
 
 // Mock fetch
 global.fetch = vi.fn();
+
+function mockFetch() {
+  return vi.mocked(global.fetch);
+}
+
+function mockJsonResponse(body: unknown): Response {
+  return {
+    ok: true,
+    json: async () => body,
+  } as Response;
+}
 
 // Unmock the API service to test the real implementation
 vi.unmock('../../services/api');
@@ -22,10 +35,7 @@ describe('fetchBookmarkedResources', () => {
     const onApiCall = vi.fn();
 
     // Mock success response
-    (global.fetch as any).mockResolvedValue({
-      ok: true,
-      json: async () => ({ data: [] }),
-    });
+    mockFetch().mockResolvedValue(mockJsonResponse({ data: [] }));
 
     await fetchBookmarkedResources(ids, onApiCall);
 
@@ -111,7 +121,7 @@ describe('fetchFacetValues', () => {
     const url = new URL(callUrl);
 
     // Verify path includes facetName (route is /search/facets/:facetName to go through SSR)
-    expect(url.pathname).toBe('/search/facets/dct_spatial_sm');
+    expect(url.pathname).toBe('/api/v1/search/facets/dct_spatial_sm');
     expect(url.searchParams.get('page')).toBe('1');
     expect(url.searchParams.get('per_page')).toBe('10');
     expect(url.searchParams.get('sort')).toBe('count_desc');
@@ -294,6 +304,7 @@ describe('fetchFacetValues', () => {
     const searchParams = new URLSearchParams();
     const mockFetch = vi.fn().mockResolvedValue({
       ok: false,
+      status: 404,
       statusText: 'Not Found',
       text: async () => '{"detail":"Not Found"}',
     });
@@ -304,7 +315,7 @@ describe('fetchFacetValues', () => {
         facetName: 'dct_spatial_sm',
         searchParams,
       })
-    ).rejects.toThrow('Failed to fetch facet values: Not Found');
+    ).rejects.toThrow('HTTP error 404: {"detail":"Not Found"}');
   });
 
   it('handles all sort options', async () => {
@@ -365,7 +376,7 @@ describe('fetchMapH3', () => {
 
     const callUrl = mockFetch.mock.calls[0][0];
     const url = new URL(callUrl);
-    expect(url.pathname).toBe('/map/h3');
+    expect(url.pathname).toBe('/api/v1/map/h3');
     expect(url.searchParams.get('_v')).toBe('2');
     expect(url.searchParams.get('adv_q')).toBe(advQuery);
   });
@@ -386,16 +397,15 @@ describe('fetchFeaturedResourcePreview', () => {
   it('requests the lightweight homepage profile for featured previews', async () => {
     const onApiCall = vi.fn();
 
-    (global.fetch as any).mockResolvedValue({
-      ok: true,
-      json: async () => ({
+    mockFetch().mockResolvedValue(
+      mockJsonResponse({
         data: {
           id: 'resource-1',
           type: 'resource',
           attributes: { ogm: { id: 'resource-1', dct_title_s: 'Resource 1' } },
         },
-      }),
-    });
+      })
+    );
 
     await fetchFeaturedResourcePreview('resource-1', onApiCall);
 
@@ -430,9 +440,8 @@ describe('fetchResourceDetails', () => {
   it('does not send stale Turnstile session headers when Turnstile is not configured', async () => {
     window.sessionStorage.setItem('ogm_turnstile_session', 'stale-token');
 
-    (global.fetch as any).mockResolvedValue({
-      ok: true,
-      json: async () => ({
+    mockFetch().mockResolvedValue(
+      mockJsonResponse({
         data: {
           id: 'princeton-08612q67f',
           type: 'resource',
@@ -443,13 +452,13 @@ describe('fetchResourceDetails', () => {
             },
           },
         },
-      }),
-    });
+      })
+    );
 
     await fetchResourceDetails('princeton-08612q67f');
 
     expect(global.fetch).toHaveBeenCalledTimes(1);
-    const requestInit = (global.fetch as any).mock.calls[0][1];
+    const requestInit = mockFetch().mock.calls[0][1] as RequestInit;
     expect(requestInit.headers).toMatchObject({
       Accept: 'application/vnd.api+json, application/json',
       Authorization: 'Bearer 225b47b4-b640-48ff-bf82-28d37d5131fa',
@@ -460,12 +469,58 @@ describe('fetchResourceDetails', () => {
   });
 });
 
+describe('fetchResourceJson', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+    Object.defineProperty(window, 'location', {
+      value: {
+        origin: 'https://example.com',
+        hostname: 'example.com',
+      },
+      writable: true,
+    });
+  });
+
+  it('returns the full resource JSON response', async () => {
+    const onApiCall = vi.fn();
+    const body = {
+      jsonapi: { version: '1.1' },
+      data: {
+        id: 'resource-1',
+        type: 'resource',
+        attributes: {
+          ogm: {
+            id: 'resource-1',
+            dct_title_s: 'Resource 1',
+          },
+        },
+      },
+      meta: {
+        requestId: 'request-1',
+      },
+    };
+
+    mockFetch().mockResolvedValue(mockJsonResponse(body));
+
+    const response = await fetchResourceJson('resource-1', onApiCall);
+
+    expect(response).toEqual(body);
+    expect(onApiCall).toHaveBeenCalledTimes(1);
+    const url = new URL(onApiCall.mock.calls[0][0]);
+    expect(url.origin).toBe('https://ogm.geo4lib.app');
+    expect(url.pathname).toBe('/api/v1/resources/resource-1');
+    expect(url.searchParams.get('format')).toBe('json');
+  });
+});
+
 describe('fetchHomeBlogPosts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('prefers the same-origin API route before the SSR proxy on deployed hosts', async () => {
+  it('requests home blog posts from the configured API endpoint', async () => {
     Object.defineProperty(window, 'location', {
       value: {
         origin: 'https://example.com',
@@ -474,22 +529,18 @@ describe('fetchHomeBlogPosts', () => {
       writable: true,
     });
 
-    (global.fetch as any).mockResolvedValue({
-      ok: true,
-      headers: { get: () => 'application/json' },
-      text: async () => JSON.stringify({ data: [], meta: {} }),
-    });
+    mockFetch().mockResolvedValue(mockJsonResponse({ data: [], meta: {} }));
 
     await fetchHomeBlogPosts({ limit: 3, theme: 'btaa' });
 
     expect(global.fetch).toHaveBeenCalledTimes(1);
-    const url = new URL((global.fetch as any).mock.calls[0][0]);
+    const url = new URL(String(mockFetch().mock.calls[0][0]));
     expect(url.pathname).toBe('/api/v1/home/blog-posts');
     expect(url.searchParams.get('limit')).toBe('3');
     expect(url.searchParams.get('theme')).toBe('btaa');
   });
 
-  it('falls back to the SSR proxy when the same-origin API path is not available', async () => {
+  it('requests home blog posts from localhost with the configured API endpoint', async () => {
     Object.defineProperty(window, 'location', {
       value: {
         origin: 'http://localhost:3000',
@@ -498,26 +549,15 @@ describe('fetchHomeBlogPosts', () => {
       writable: true,
     });
 
-    (global.fetch as any)
-      .mockResolvedValueOnce({
-        ok: true,
-        headers: { get: () => 'text/html' },
-        text: async () => '<!doctype html><html></html>',
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        headers: { get: () => 'application/json' },
-        text: async () =>
-          JSON.stringify({ data: [{ slug: 'latest-post' }], meta: {} }),
-      });
+    mockFetch().mockResolvedValue(
+      mockJsonResponse({ data: [{ slug: 'latest-post' }], meta: {} })
+    );
 
     const response = await fetchHomeBlogPosts({ limit: 3, theme: 'btaa' });
 
-    expect((global.fetch as any).mock.calls).toHaveLength(2);
-    const firstUrl = new URL((global.fetch as any).mock.calls[0][0]);
-    const secondUrl = new URL((global.fetch as any).mock.calls[1][0]);
-    expect(firstUrl.pathname).toBe('/api/v1/home/blog-posts');
-    expect(secondUrl.pathname).toBe('/home/blog-posts');
+    expect(mockFetch().mock.calls).toHaveLength(1);
+    const url = new URL(String(mockFetch().mock.calls[0][0]));
+    expect(url.pathname).toBe('/api/v1/home/blog-posts');
     expect(response.data).toEqual([{ slug: 'latest-post' }]);
   });
 });
@@ -525,6 +565,76 @@ describe('fetchHomeBlogPosts', () => {
 describe('fetchSearchResults', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    global.fetch = vi.fn();
+    window.localStorage.clear();
+  });
+
+  it('applies the University of Nevada, Reno provider scope from theme config', async () => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'unr');
+    Object.defineProperty(window, 'location', {
+      value: {
+        origin: 'https://example.com',
+        href: 'https://example.com/search',
+      },
+      writable: true,
+    });
+
+    const onApiCall = vi.fn();
+    mockFetch().mockResolvedValue(
+      mockJsonResponse({ data: [], meta: {}, included: [] })
+    );
+
+    await fetchSearchResults('maps', 1, 10, [], onApiCall);
+
+    expect(onApiCall).toHaveBeenCalledTimes(1);
+    const requestUrl = new URL(onApiCall.mock.calls[0][0]);
+    expect(
+      requestUrl.searchParams.getAll('include_filters[schema_provider_s][]')
+    ).toEqual(['University of Nevada, Reno']);
+  });
+
+  it('keeps the active theme provider scope when replaying source search params', async () => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'unr');
+    Object.defineProperty(window, 'location', {
+      value: {
+        origin: 'https://example.com',
+        href: 'https://example.com/resources/unr-example',
+      },
+      writable: true,
+    });
+
+    const onApiCall = vi.fn();
+    const sourceSearchParams = new URLSearchParams();
+    sourceSearchParams.set('q', '');
+    sourceSearchParams.append('include_filters[id][]', 'unr-allowed');
+    sourceSearchParams.append('include_filters[id][]', 'outside-scope');
+
+    mockFetch().mockResolvedValue(
+      mockJsonResponse({ data: [], meta: {}, included: [] })
+    );
+
+    await fetchSearchResults(
+      '',
+      1,
+      2,
+      [],
+      onApiCall,
+      undefined,
+      [],
+      [],
+      undefined,
+      sourceSearchParams
+    );
+
+    expect(onApiCall).toHaveBeenCalledTimes(1);
+    const requestUrl = new URL(onApiCall.mock.calls[0][0]);
+    expect(
+      requestUrl.searchParams.getAll('include_filters[schema_provider_s][]')
+    ).toEqual(['University of Nevada, Reno']);
+    expect(requestUrl.searchParams.getAll('include_filters[id][]')).toEqual([
+      'unr-allowed',
+      'outside-scope',
+    ]);
   });
 
   it('replays source search params when paginating from a resource page', async () => {
@@ -563,10 +673,9 @@ describe('fetchSearchResults', () => {
     sourceSearchParams.set('include_filters[geo][bottom_right][lon]', '-104');
     sourceSearchParams.set('include_filters[geo][relation]', 'within');
 
-    (global.fetch as any).mockResolvedValue({
-      ok: true,
-      json: async () => ({ data: [], meta: {}, included: [] }),
-    });
+    mockFetch().mockResolvedValue(
+      mockJsonResponse({ data: [], meta: {}, included: [] })
+    );
 
     await fetchSearchResults(
       '',
@@ -615,10 +724,9 @@ describe('fetchSearchResults', () => {
     });
 
     const onApiCall = vi.fn();
-    (global.fetch as any).mockResolvedValue({
-      ok: true,
-      json: async () => ({ data: [], meta: {}, included: [] }),
-    });
+    mockFetch().mockResolvedValue(
+      mockJsonResponse({ data: [], meta: {}, included: [] })
+    );
 
     await fetchSearchResults('maps', 1, 10, [], onApiCall);
 
@@ -639,10 +747,9 @@ describe('fetchSearchResults', () => {
     });
 
     const onApiCall = vi.fn();
-    (global.fetch as any).mockResolvedValue({
-      ok: true,
-      json: async () => ({ data: [], meta: {}, included: [] }),
-    });
+    mockFetch().mockResolvedValue(
+      mockJsonResponse({ data: [], meta: {}, included: [] })
+    );
 
     await fetchSearchResults('maps', 1, 10, [], onApiCall);
 

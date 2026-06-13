@@ -17,9 +17,9 @@ vi.mock('react-router', async (importOriginal) => {
 import { HomePage } from '../../pages/HomePage';
 import { SearchPage } from '../../pages/SearchPage';
 import { ResourceView } from '../../pages/ResourceView';
+import { ResourceAdminPage } from '../../pages/ResourceAdminPage';
 import { BookmarksPage } from '../../pages/BookmarksPage';
 import { NotFoundPage } from '../../pages/NotFoundPage';
-import { MapPage } from '../../pages/MapPage';
 import { ApiProvider } from '../../context/ApiContext';
 import { DebugProvider } from '../../context/DebugContext';
 import { BookmarkProvider } from '../../context/BookmarkContext';
@@ -51,22 +51,6 @@ vi.mock('../../components/home/HomePageHexMapBackground.client', () => ({
 vi.mock('../../components/search/MapView', () => ({
   MapView: () => null,
 }));
-// MapPage.client pulls in Leaflet, useGeoFacets, useMapH3 - mock to isolate title test
-// vi.mock factory is hoisted, so we use require (eslint disable required)
-vi.mock('../../pages/MapPage.client', () => {
-  /* eslint-disable @typescript-eslint/no-require-imports */
-  const React = require('react');
-  const { Helmet } = require('react-helmet-async');
-  /* eslint-enable @typescript-eslint/no-require-imports */
-  const MockMapClient = () =>
-    React.createElement(
-      React.Fragment,
-      null,
-      React.createElement(Helmet, null, React.createElement('title', null, 'Map - Big Ten Academic Alliance Geoportal')),
-      React.createElement('div', { 'data-testid': 'map-page-client' }, 'Map')
-    );
-  return { MapPage: MockMapClient, default: MockMapClient };
-});
 
 function assertHasTitle() {
   const titleEl = document.querySelector('title');
@@ -155,6 +139,31 @@ describe('Page titles', () => {
     });
   });
 
+  it('ResourceAdminPage has a title', async () => {
+    const routes = [
+      {
+        path: '/resources/:id/admin',
+        element: (
+          <HelmetProvider>
+            <ApiProvider>
+              <DebugProvider>
+                <ResourceAdminPage />
+              </DebugProvider>
+            </ApiProvider>
+          </HelmetProvider>
+        ),
+      },
+    ];
+    const router = createMemoryRouter(routes, {
+      initialEntries: ['/resources/test-id/admin'],
+    });
+    render(<RouterProvider router={router} />);
+
+    await waitFor(() => {
+      assertHasTitle();
+    });
+  });
+
   it('BookmarksPage has a title', async () => {
     Cookies.set('bookmarks', JSON.stringify([]));
     const routes = [
@@ -196,31 +205,6 @@ describe('Page titles', () => {
     ];
     const router = createMemoryRouter(routes, {
       initialEntries: ['/nonexistent'],
-    });
-    render(<RouterProvider router={router} />);
-
-    await waitFor(() => {
-      assertHasTitle();
-    });
-  });
-
-  it('MapPage has a title', async () => {
-    const routes = [
-      {
-        path: '/map',
-        element: (
-          <HelmetProvider>
-            <ApiProvider>
-              <DebugProvider>
-                <MapPage />
-              </DebugProvider>
-            </ApiProvider>
-          </HelmetProvider>
-        ),
-      },
-    ];
-    const router = createMemoryRouter(routes, {
-      initialEntries: ['/map'],
     });
     render(<RouterProvider router={router} />);
 

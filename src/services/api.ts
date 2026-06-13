@@ -146,7 +146,7 @@ function appendForwardedSearchFilters(
   target: URLSearchParams,
   source: URLSearchParams
 ) {
-  Array.from(source.keys())
+  Array.from(new Set(source.keys()))
     .filter(
       (key) =>
         key.startsWith('include_filters[') ||
@@ -740,6 +740,35 @@ export async function fetchResourceDetails(
     }
     throw new ApiError(
       `Failed to fetch resource details: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+}
+
+export type ResourceJsonResponse = {
+  data?: GeoDocumentDetails;
+  [key: string]: unknown;
+};
+
+export async function fetchResourceJson(
+  id: string,
+  onApiCall?: (url: string) => void,
+  options: FetchOptions = { useJsonp: false }
+): Promise<ResourceJsonResponse> {
+  const baseUrl = buildThemeApiUrl(`/resources/${id}`);
+  const url = createApiUrl(baseUrl);
+  onApiCall?.(url.toString());
+
+  try {
+    return await unifiedFetch<ResourceJsonResponse>(url.toString(), options);
+  } catch (error) {
+    console.error('Error fetching resource JSON:', error);
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(
+      `Failed to fetch resource JSON: ${
+        error instanceof Error ? error.message : 'Unknown error'
+      }`
     );
   }
 }

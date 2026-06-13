@@ -108,10 +108,6 @@ navigation:
       label:
         en: Catalog
       external: false
-    - href: /map
-      label:
-        en: Spatial View
-      external: false
   cta:
     href: /search?q=
     label:
@@ -122,10 +118,6 @@ navigation:
       label:
         en: Search
       external: false
-    - href: /map
-      label:
-        en: Map
-      external: false
     - href: /bookmarks
       label:
         en: Bookmarks
@@ -135,10 +127,6 @@ homepage:
     - href: /search?q=
       label:
         en: Search resources
-      external: false
-    - href: /map
-      label:
-        en: Open map
       external: false
   featured_items:
     - id: a10a0f50-994e-0134-2096-0050569601ca-c
@@ -206,10 +194,6 @@ footer:
         - href: /search?q=
           label:
             en: Search
-          external: false
-        - href: /map
-          label:
-            en: Map
           external: false
         - href: /bookmarks
           label:
