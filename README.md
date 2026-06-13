@@ -231,6 +231,10 @@ When adding a new theme:
 
 This app builds to `dist/` and can be hosted as static files.
 
+`npm run build` also emits `dist/404.html` as a copy of the built SPA entry
+point. GitHub Pages uses that file as its fallback for clean browser-routed deep
+links such as `/resources/<id>`.
+
 The repository includes a GitHub Pages workflow in
 `.github/workflows/deploy.yml`. Review its branch trigger and required secrets
 before relying on it for a new deployment.

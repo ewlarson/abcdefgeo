@@ -1,13 +1,33 @@
 import path from 'node:path';
+import fs from 'node:fs/promises';
 import { defineConfig, loadEnv } from 'vite';
+import type { Plugin, ResolvedConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+
+function githubPagesSpaFallback(): Plugin {
+  let outDir = '';
+
+  return {
+    name: 'github-pages-spa-fallback',
+    apply: 'build' as const,
+    configResolved(config: ResolvedConfig) {
+      outDir = path.resolve(config.root, config.build.outDir);
+    },
+    async closeBundle() {
+      await fs.copyFile(
+        path.join(outDir, 'index.html'),
+        path.join(outDir, '404.html')
+      );
+    },
+  };
+}
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
     base: env.VITE_BASE_URL || '/',
-    plugins: [react()],
+    plugins: [react(), githubPagesSpaFallback()],
     server: {
       port: 3000,
       allowedHosts: ['btaa-geoportal.ngrok.io'],
@@ -18,10 +38,7 @@ export default defineConfig(({ mode }) => {
           __dirname,
           'node_modules/@geoblacklight/frontend/app/javascript/geoblacklight'
         ),
-        'void-elements': path.resolve(
-          __dirname,
-          'src/shims/void-elements.ts'
-        ),
+        'void-elements': path.resolve(__dirname, 'src/shims/void-elements.ts'),
       },
       dedupe: [
         'react',
