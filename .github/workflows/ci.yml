@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: ['main']
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      VITE_USE_JSONP: 'false'
+      VITE_ENFORCE_HTTPS: 'false'
+      VITE_TURNSTILE_ENABLED: 'false'
+      VITE_TURNSTILE_ENABLE_LOCAL: 'false'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test with coverage
+        run: npm run test:ci
+
+      - name: Build
+        run: npm run build

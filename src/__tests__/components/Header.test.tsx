@@ -38,7 +38,7 @@ describe('Header', () => {
 
     const banner = screen.getByRole('status');
     expect(banner).toHaveTextContent(
-      'NOTICE: This is an experimental proof-of-concept.'
+      'NOTICE: This is an experimental proof-of-concept geoportal.'
     );
     expect(banner).toHaveClass('bg-[#007ab8]');
     expect(banner).toHaveClass('border-[#041e42]');
@@ -50,7 +50,9 @@ describe('Header', () => {
     renderHeader('btaa');
 
     expect(
-      screen.queryByText('NOTICE: This is an experimental proof-of-concept.')
+      screen.queryByText(
+        'NOTICE: This is an experimental proof-of-concept geoportal.'
+      )
     ).not.toBeInTheDocument();
   });
 });

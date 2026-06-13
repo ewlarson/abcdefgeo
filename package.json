@@ -22,6 +22,7 @@
     "test:ui": "vitest --ui",
     "coverage": "vitest --coverage",
     "test:coverage": "vitest --coverage",
+    "test:ci": "vitest --run --coverage",
     "test:coverage:ui": "vitest --coverage --ui",
     "test:a11y": "node scripts/run-a11y-tests.cjs",
     "test:a11y:pa11y": "pa11y-ci",
