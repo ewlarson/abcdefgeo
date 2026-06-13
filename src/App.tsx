@@ -16,6 +16,7 @@ import { FixturesTestPage } from './pages/FixturesTestPage';
 import { ProviderPillsTestPage } from './pages/ProviderPillsTestPage';
 import { TestPage } from './pages/TestPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { ServerErrorPage } from './pages/ServerErrorPage';
 import { TurnstileGate } from './components/security/TurnstileGate';
 
 function ensureGeoblacklightModalRoot() {
@@ -101,6 +102,8 @@ function App() {
           />
           <Route path="/test/fixtures" element={<FixturesTestPage />} />
           <Route path="/test" element={<TestPage />} />
+          <Route path="/500" element={<ServerErrorPage />} />
+          <Route path="/500.html" element={<ServerErrorPage />} />
           <Route
             path="/"
             element={

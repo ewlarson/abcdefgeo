@@ -14,9 +14,13 @@ function githubPagesSpaFallback(): Plugin {
       outDir = path.resolve(config.root, config.build.outDir);
     },
     async closeBundle() {
-      await fs.copyFile(
-        path.join(outDir, 'index.html'),
-        path.join(outDir, '404.html')
+      await Promise.all(
+        ['404.html', '500.html'].map((fileName) =>
+          fs.copyFile(
+            path.join(outDir, 'index.html'),
+            path.join(outDir, fileName)
+          )
+        )
       );
     },
   };
