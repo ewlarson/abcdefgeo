@@ -2,6 +2,12 @@ import { getActiveThemeConfig } from '../config/institution';
 
 const TURNSTILE_SESSION_STORAGE_KEY = 'ogm_turnstile_session';
 const DEFAULT_TURNSTILE_ACTION = 'ogm_viewer_gate';
+export const TURNSTILE_REQUIRED_EVENT = 'ogm:turnstile-required';
+
+export type TurnstileRequiredEventDetail = {
+  responseStatus?: number;
+  url?: string;
+};
 
 type TurnstileStatusResponse = {
   data?: {
@@ -22,6 +28,8 @@ type TurnstileVerifyResponse = {
 };
 
 export function isTurnstileConfigured(): boolean {
+  if (shouldBypassTurnstileInLocalDev()) return false;
+
   return (
     !isDisabledFlag(import.meta.env.VITE_TURNSTILE_ENABLED) &&
     Boolean(import.meta.env.VITE_TURNSTILE_SITE_KEY)
@@ -66,6 +74,35 @@ export function clearTurnstileSessionToken() {
   } catch {
     // Ignore storage access failures.
   }
+}
+
+export function isTurnstileRequiredResponse(
+  response: Response,
+  bodyText?: string
+): boolean {
+  if (response.status !== 403) return false;
+
+  if (response.headers.get('x-turnstile-required')?.toLowerCase() === 'true') {
+    return true;
+  }
+
+  if (!bodyText) return false;
+
+  return responseBodyRequiresTurnstile(bodyText);
+}
+
+export function signalTurnstileRequired(
+  detail: TurnstileRequiredEventDetail = {}
+) {
+  clearTurnstileSessionToken();
+
+  if (typeof window === 'undefined') return;
+
+  window.dispatchEvent(
+    new CustomEvent<TurnstileRequiredEventDetail>(TURNSTILE_REQUIRED_EVENT, {
+      detail,
+    })
+  );
 }
 
 export async function fetchTurnstileStatus(): Promise<boolean> {
@@ -170,5 +207,40 @@ function isDisabledFlag(value: string | undefined): boolean {
     String(value || '')
       .trim()
       .toLowerCase()
+  );
+}
+
+function isEnabledFlag(value: string | undefined): boolean {
+  return ['1', 'true', 'yes', 'on'].includes(
+    String(value || '')
+      .trim()
+      .toLowerCase()
+  );
+}
+
+function responseBodyRequiresTurnstile(bodyText: string): boolean {
+  try {
+    const body = JSON.parse(bodyText) as Record<string, unknown>;
+    if (body.error === 'turnstile_required') return true;
+
+    const data =
+      body.data && typeof body.data === 'object'
+        ? (body.data as Record<string, unknown>)
+        : null;
+    const attributes =
+      data?.attributes && typeof data.attributes === 'object'
+        ? (data.attributes as Record<string, unknown>)
+        : null;
+
+    return attributes?.error === 'turnstile_required';
+  } catch {
+    return false;
+  }
+}
+
+function shouldBypassTurnstileInLocalDev(): boolean {
+  const isDevOrTest = import.meta.env.DEV || import.meta.env.MODE === 'test';
+  return (
+    isDevOrTest && !isEnabledFlag(import.meta.env.VITE_TURNSTILE_ENABLE_LOCAL)
   );
 }

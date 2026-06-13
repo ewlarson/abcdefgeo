@@ -16,6 +16,11 @@ export const FIELD_LABELS: Record<string, FieldConfig> = {
     display: true,
     facet: 'dct_language_sm',
   },
+  b1g_language_sm: {
+    label: 'Language',
+    display: true,
+    facet: 'b1g_language_sm',
+  },
   dct_creator_sm: { label: 'Creator', display: true, facet: 'dct_creator_sm' },
   dct_publisher_sm: {
     label: 'Publisher',

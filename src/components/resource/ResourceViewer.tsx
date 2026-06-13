@@ -54,7 +54,6 @@ interface ResourceViewerProps {
 }
 
 type ViewerExtent = [number, number, number, number];
-type AnyJson = Record<string, unknown>;
 type ObservableMapSource = {
   getState?: () => string;
   on?: (type: string, listener: () => void) => void;
@@ -233,15 +232,6 @@ function appendQueryParam(url: string, key: string, value: string): string {
     const separator = url.includes('?') ? '&' : '?';
     return `${url}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
   }
-}
-
-function serializeForInlineScript(value: unknown): string {
-  return JSON.stringify(value)
-    .replace(/</g, '\\u003C')
-    .replace(/>/g, '\\u003E')
-    .replace(/&/g, '\\u0026')
-    .replace(/\u2028/g, '\\u2028')
-    .replace(/\u2029/g, '\\u2029');
 }
 
 function escapeHtml(value: string) {
@@ -500,8 +490,7 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
   // until after mount (prevents hydration mismatches and guarantees DOM insertion
   // after controllers are registered).
   const [mounted, setMounted] = useState(false);
-  const [iiifInlineManifest, setIiifInlineManifest] =
-    useState<AnyJson | null>(null);
+  const [iiifManifestUrl, setIiifManifestUrl] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -509,11 +498,12 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
 
   useEffect(() => {
     if (!mounted || protocol !== 'iiif_image' || !endpoint) {
-      setIiifInlineManifest(null);
+      setIiifManifestUrl(null);
       return;
     }
 
     let cancelled = false;
+    let objectUrl: string | null = null;
 
     const loadManifest = async () => {
       try {
@@ -525,13 +515,16 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
           info,
         });
 
-        if (!cancelled) {
-          setIiifInlineManifest(manifest);
-        }
+        if (cancelled) return;
+
+        objectUrl = URL.createObjectURL(
+          new Blob([JSON.stringify(manifest)], { type: 'application/json' })
+        );
+        setIiifManifestUrl(objectUrl);
       } catch (error) {
         console.error('Failed to build IIIF manifest for viewer:', error);
         if (!cancelled) {
-          setIiifInlineManifest(null);
+          setIiifManifestUrl(null);
         }
       }
     };
@@ -540,6 +533,9 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
 
     return () => {
       cancelled = true;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
     };
   }, [endpoint, mounted, protocol]);
 
@@ -587,106 +583,34 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
         );
       }
 
-      const manifestUrl = protocol === 'iiif_image' ? null : endpoint;
-      const inlineManifest =
-        protocol === 'iiif_image' ? iiifInlineManifest : null;
+      const pageOrigin = window.location.origin;
+      const manifestUrl =
+        protocol === 'iiif_image'
+          ? iiifManifestUrl
+          : new URL(endpoint, pageOrigin).toString();
 
-      if (!manifestUrl && !inlineManifest) {
+      if (!manifestUrl) {
         return (
           <div className="viewer h-[600px] text-gray-500">Loading viewer…</div>
         );
       }
 
-      const miradorVersion = '3.4.3';
-
-      // NOTE: srcDoc runs in an isolated document. We inject Mirador from a pinned CDN
-      // and mount it into a local container. Inline IIIF image manifests create
-      // their Blob URL inside this sandboxed document so Mirador can fetch them.
-      const srcDoc = `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-      html, body { height: 100%; margin: 0; }
-      #mirador-root { height: 100vh; width: 100vw; }
-    </style>
-    <script defer src="https://unpkg.com/mirador@${miradorVersion}/dist/mirador.min.js"></script>
-  </head>
-  <body>
-    <div id="mirador-root"></div>
-    <script>
-      (function () {
-        var manifestUrl = ${serializeForInlineScript(manifestUrl)};
-        var inlineManifest = ${serializeForInlineScript(inlineManifest)};
-        var manifestObjectUrl = null;
-
-        function getManifestUrl() {
-          if (inlineManifest) {
-            manifestObjectUrl = URL.createObjectURL(
-              new Blob([JSON.stringify(inlineManifest)], { type: "application/json" })
-            );
-            return manifestObjectUrl;
-          }
-          return manifestUrl;
-        }
-
-        window.addEventListener("pagehide", function () {
-          if (manifestObjectUrl) {
-            URL.revokeObjectURL(manifestObjectUrl);
-          }
-        });
-
-        function boot() {
-          var Mirador = window.Mirador;
-          if (!Mirador || typeof Mirador.viewer !== "function") {
-            console.error("Mirador global not available");
-            return;
-          }
-          var resolvedManifestUrl = getManifestUrl();
-          if (!resolvedManifestUrl) {
-            console.error("Missing manifestUrl");
-            return;
-          }
-          Mirador.viewer({
-            id: "mirador-root",
-            windows: [{ manifestId: resolvedManifestUrl, thumbnailNavigationPosition: "far-bottom" }],
-            window: {
-              hideSearchPanel: false,
-              hideWindowTitle: true,
-              hideAnnotationsPanel: true,
-              allowClose: false,
-              allowMaximize: false,
-              allowFullscreen: true
-            },
-            workspace: { showZoomControls: true },
-            workspaceControlPanel: { enabled: false }
-          });
-        }
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", function () {
-            // Give the deferred script a beat to execute
-            setTimeout(boot, 0);
-          });
-        } else {
-          setTimeout(boot, 0);
-        }
-      })();
-    </script>
-  </body>
-</html>`;
+      const appBasePath = import.meta.env.BASE_URL || '/';
+      const miradorPath = `${appBasePath.replace(/\/$/, '')}/mirador`;
+      const miradorUrl = new URL(miradorPath, pageOrigin);
+      miradorUrl.searchParams.set('manifest', manifestUrl);
 
       return (
         <iframe
           key={viewerInstanceKey}
           title="Mirador viewer"
           className="viewer h-[600px] w-full border-0"
-          // Allow scripts so Mirador can run. Keep it isolated from the parent page.
-          sandbox="allow-scripts"
-          // Required for Fullscreen API inside sandboxed iframes (Mirador's fullscreen button).
+          // Keep Mirador isolated in its own document while allowing local module scripts and plugin downloads.
+          sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox allow-downloads"
+          // Required for Fullscreen API inside sandboxed iframes.
           allow="fullscreen"
           allowFullScreen
-          srcDoc={srcDoc}
+          src={miradorUrl.toString()}
         />
       );
     }

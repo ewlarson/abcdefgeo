@@ -57,6 +57,7 @@ export function Header() {
   const { theme } = useTheme();
   const { t, text } = useI18n();
   const banner = theme.site?.banner;
+  const showResourceClassTabs = location.pathname !== '/search';
   const bannerText = text(banner?.text);
   const showBanner = banner?.enabled !== false && !!bannerText;
   const headerCfg = theme.institution?.header;
@@ -363,9 +364,11 @@ export function Header() {
             </button>
           </div>
 
-          <div className="hidden xl:block col-span-6 col-start-4 self-end min-w-0">
-            <ResourceClassFilterTabs variant="header" />
-          </div>
+          {showResourceClassTabs && (
+            <div className="hidden xl:block col-span-6 col-start-4 self-end min-w-0">
+              <ResourceClassFilterTabs variant="header" />
+            </div>
+          )}
         </div>
       </div>
 
@@ -437,9 +440,11 @@ export function Header() {
             : null}
         </nav>
 
-        <div className="border-t border-white/20 px-4 py-4">
-          <ResourceClassFilterTabs variant="header" layout="vertical" />
-        </div>
+        {showResourceClassTabs && (
+          <div className="border-t border-white/20 px-4 py-4">
+            <ResourceClassFilterTabs variant="header" layout="vertical" />
+          </div>
+        )}
       </div>
 
       {mobileNavOpen && (
