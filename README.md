@@ -254,6 +254,9 @@ When adding a new theme:
 
 This app builds to `dist/` and can be hosted as static files.
 
+`npm run build` also emits `dist/404.html` as a copy of the built SPA entry
+point. GitHub Pages uses that file as its fallback for clean browser-routed deep
+links such as `/resources/<id>`.
 `npm run generate:site` writes a deny-all `public/robots.txt` so themable
 preview and pilot sites do not invite crawler traffic before an institution is
 ready to publish.

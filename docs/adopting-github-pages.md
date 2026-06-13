@@ -253,19 +253,10 @@ arrive.
 
 ## 7. Pick Routing For GitHub Pages
 
-GitHub Pages serves static files. For this viewer, the safest Pages setting is
-hash routing:
-
-```yaml
-site:
-  routing:
-    mode: hash
-```
-
-That produces URLs like `/REPO/#/search` and avoids direct-link 404s on static
-hosts that do not rewrite every route to `index.html`.
-
-Use browser routing only when your host is configured with an SPA fallback:
+GitHub Pages serves static files, but it has one useful SPA escape hatch: when a
+path does not exist, it serves `404.html` from the published artifact. This repo
+copies the built `index.html` to `404.html` during `npm run build`, so browser
+routing works on Pages with clean deep links such as `/REPO/resources/<id>`:
 
 ```yaml
 site:
@@ -273,8 +264,21 @@ site:
     mode: browser
 ```
 
-Browser routing gives cleaner URLs like `/REPO/search`, but it needs server or
-host support for deep links.
+Visitors may still receive an HTTP 404 status for a cold deep-link request
+because GitHub Pages is serving its fallback file, but the React app loads and
+renders the requested route.
+
+Use hash routing when you need to publish to a static host that does not support
+an SPA fallback file:
+
+```yaml
+site:
+  routing:
+    mode: hash
+```
+
+That produces URLs like `/REPO/#/search` and avoids relying on host-level
+fallback behavior.
 
 ## 8. Configure The Vite Base Path
 
