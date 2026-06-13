@@ -55,6 +55,19 @@ export const messages = {
     home: {
       openMedia: 'Open featured media',
     },
+    resourceAdmin: {
+      backToResource: 'Back to resource',
+      endpointLabel: 'API endpoint:',
+      eyebrow: 'Admin JSON',
+      fetchError: 'Unable to load resource metadata.',
+      heading: 'Aardvark Metadata',
+      jsonLabel: 'Complete resource JSON',
+      loading: 'Loading resource metadata...',
+      noResourceId: 'No resource id was provided.',
+      pageDescription: 'Complete resource JSON response from the API.',
+      pageTitle: 'Aardvark Metadata',
+      pageTitleWithTitle: 'Aardvark Metadata: {title}',
+    },
     search: {
       customArea: 'Custom area',
       didYouMean: 'Did you mean:',
@@ -152,6 +165,19 @@ export const messages = {
     home: {
       openMedia: 'Abrir contenido destacado',
     },
+    resourceAdmin: {
+      backToResource: 'Volver al recurso',
+      endpointLabel: 'Endpoint de la API:',
+      eyebrow: 'JSON de administración',
+      fetchError: 'No se pudieron cargar los metadatos del recurso.',
+      heading: 'Metadatos de Aardvark',
+      jsonLabel: 'JSON completo del recurso',
+      loading: 'Cargando metadatos del recurso...',
+      noResourceId: 'No se proporcionó un id de recurso.',
+      pageDescription: 'Respuesta JSON completa del recurso desde la API.',
+      pageTitle: 'Metadatos de Aardvark',
+      pageTitleWithTitle: 'Metadatos de Aardvark: {title}',
+    },
     search: {
       customArea: 'Área personalizada',
       didYouMean: 'Quizás quiso decir:',
@@ -159,10 +185,8 @@ export const messages = {
       in: 'en',
       noCloseSuggestions:
         'No se encontraron sugerencias de palabras clave cercanas.',
-      noMatchingPlaces:
-        'No se encontraron áreas geográficas coincidentes.',
-      noResultLocationsToMap:
-        'No hay ubicaciones de resultados para mapear.',
+      noMatchingPlaces: 'No se encontraron áreas geográficas coincidentes.',
+      noResultLocationsToMap: 'No hay ubicaciones de resultados para mapear.',
       noResultsHeading: 'No se encontraron resultados',
       noResultsWithQuery:
         'Pruebe una búsqueda sugerida, una búsqueda por campo más amplia o la búsqueda avanzada.',
@@ -189,8 +213,7 @@ export const messages = {
       finishingCheck: 'Finalizando comprobación...',
       turnstileDescription:
         'Esta comprobación rápida ayuda a evitar que el tráfico automatizado sobrecargue el Geoportal.',
-      turnstileError:
-        'La verificación no se completó. Inténtelo de nuevo.',
+      turnstileError: 'La verificación no se completó. Inténtelo de nuevo.',
       turnstileTitle: 'Verificando la sesión del navegador',
     },
     seo: {
@@ -201,7 +224,10 @@ export const messages = {
   },
 } as const;
 
-function formatMessage(template: string, vars?: Record<string, string | number>) {
+function formatMessage(
+  template: string,
+  vars?: Record<string, string | number>
+) {
   if (!vars) return template;
 
   return template.replace(/\{(\w+)\}/g, (_, key) =>
@@ -235,8 +261,9 @@ export function translate(
   const primaryLocaleMessages =
     (messages as Record<string, Record<string, MessageValue>>)[locale] || {};
   const fallbackLocaleMessages =
-    (messages as Record<string, Record<string, MessageValue>>)[fallbackLocale] ||
-    {};
+    (messages as Record<string, Record<string, MessageValue>>)[
+      fallbackLocale
+    ] || {};
   const primary = getNestedMessage(primaryLocaleMessages, key);
   const fallback = getNestedMessage(fallbackLocaleMessages, key);
   return formatMessage(primary || fallback || key, vars);

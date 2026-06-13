@@ -9,6 +9,7 @@ import {
 import { HelmetProvider } from 'react-helmet-async';
 import { SearchPage } from './pages/SearchPage';
 import { ResourceView } from './pages/ResourceView';
+import { ResourceAdminPage } from './pages/ResourceAdminPage';
 import { HomePage } from './pages/HomePage';
 import { BookmarksPage } from './pages/BookmarksPage';
 import { FixturesTestPage } from './pages/FixturesTestPage';
@@ -92,6 +93,7 @@ function App() {
         <Routes>
           <Route path="/search" element={<SearchPage />} />
           <Route path="/bookmarks" element={<BookmarksPage />} />
+          <Route path="/resources/:id/admin" element={<ResourceAdminPage />} />
           <Route path="/resources/:id" element={<ResourceView />} />
           <Route
             path="/test/fixtures/providers"
