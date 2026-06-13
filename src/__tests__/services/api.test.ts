@@ -6,6 +6,7 @@ import {
   fetchHomeBlogPosts,
   fetchMapH3,
   fetchResourceDetails,
+  fetchResourceJson,
   fetchSearchResults,
 } from '../../services/api';
 import { THEME_STORAGE_KEY } from '../../config/institution';
@@ -468,6 +469,52 @@ describe('fetchResourceDetails', () => {
   });
 });
 
+describe('fetchResourceJson', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+    Object.defineProperty(window, 'location', {
+      value: {
+        origin: 'https://example.com',
+        hostname: 'example.com',
+      },
+      writable: true,
+    });
+  });
+
+  it('returns the full resource JSON response', async () => {
+    const onApiCall = vi.fn();
+    const body = {
+      jsonapi: { version: '1.1' },
+      data: {
+        id: 'resource-1',
+        type: 'resource',
+        attributes: {
+          ogm: {
+            id: 'resource-1',
+            dct_title_s: 'Resource 1',
+          },
+        },
+      },
+      meta: {
+        requestId: 'request-1',
+      },
+    };
+
+    mockFetch().mockResolvedValue(mockJsonResponse(body));
+
+    const response = await fetchResourceJson('resource-1', onApiCall);
+
+    expect(response).toEqual(body);
+    expect(onApiCall).toHaveBeenCalledTimes(1);
+    const url = new URL(onApiCall.mock.calls[0][0]);
+    expect(url.origin).toBe('https://ogm.geo4lib.app');
+    expect(url.pathname).toBe('/api/v1/resources/resource-1');
+    expect(url.searchParams.get('format')).toBe('json');
+  });
+});
+
 describe('fetchHomeBlogPosts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -482,9 +529,7 @@ describe('fetchHomeBlogPosts', () => {
       writable: true,
     });
 
-    mockFetch().mockResolvedValue(
-      mockJsonResponse({ data: [], meta: {} })
-    );
+    mockFetch().mockResolvedValue(mockJsonResponse({ data: [], meta: {} }));
 
     await fetchHomeBlogPosts({ limit: 3, theme: 'btaa' });
 

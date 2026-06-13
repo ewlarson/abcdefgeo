@@ -61,6 +61,30 @@ vi.mock('./services/api', () => ({
       },
     },
   }),
+  fetchResourceJson: vi.fn().mockResolvedValue({
+    jsonapi: {
+      version: '1.1',
+    },
+    data: {
+      id: 'test-id',
+      type: 'resource',
+      attributes: {
+        ogm: {
+          id: 'test-id',
+          dct_title_s: 'Test Resource',
+          dct_description_sm: ['Test description'],
+          dct_temporal_sm: ['2023'],
+          dc_publisher_sm: ['Test Publisher'],
+          gbl_resourceClass_sm: ['Dataset'],
+        },
+      },
+      meta: {
+        ui: {
+          thumbnail_url: null,
+        },
+      },
+    },
+  }),
   fetchFeaturedResourcePreview: vi.fn().mockResolvedValue({
     id: 'test-id',
     type: 'resource',

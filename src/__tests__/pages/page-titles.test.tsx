@@ -17,6 +17,7 @@ vi.mock('react-router', async (importOriginal) => {
 import { HomePage } from '../../pages/HomePage';
 import { SearchPage } from '../../pages/SearchPage';
 import { ResourceView } from '../../pages/ResourceView';
+import { ResourceAdminPage } from '../../pages/ResourceAdminPage';
 import { BookmarksPage } from '../../pages/BookmarksPage';
 import { NotFoundPage } from '../../pages/NotFoundPage';
 import { ApiProvider } from '../../context/ApiContext';
@@ -130,6 +131,31 @@ describe('Page titles', () => {
     ];
     const router = createMemoryRouter(routes, {
       initialEntries: ['/resources/test-id'],
+    });
+    render(<RouterProvider router={router} />);
+
+    await waitFor(() => {
+      assertHasTitle();
+    });
+  });
+
+  it('ResourceAdminPage has a title', async () => {
+    const routes = [
+      {
+        path: '/resources/:id/admin',
+        element: (
+          <HelmetProvider>
+            <ApiProvider>
+              <DebugProvider>
+                <ResourceAdminPage />
+              </DebugProvider>
+            </ApiProvider>
+          </HelmetProvider>
+        ),
+      },
+    ];
+    const router = createMemoryRouter(routes, {
+      initialEntries: ['/resources/test-id/admin'],
     });
     render(<RouterProvider router={router} />);
 
