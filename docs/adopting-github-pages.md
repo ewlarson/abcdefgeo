@@ -268,6 +268,9 @@ Visitors may still receive an HTTP 404 status for a cold deep-link request
 because GitHub Pages is serving its fallback file, but the React app loads and
 renders the requested route.
 
+The build also writes `500.html` as a copy of the SPA entry point for static
+hosts that support a custom server-error fallback.
+
 Use hash routing when you need to publish to a static host that does not support
 an SPA fallback file:
 

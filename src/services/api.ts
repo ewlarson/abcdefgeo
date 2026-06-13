@@ -21,6 +21,36 @@ export class ApiError extends Error {
   }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function readString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+function extractApiErrorMessage(payload: unknown): string | undefined {
+  if (!isRecord(payload)) return undefined;
+
+  const errors = payload.errors;
+  if (Array.isArray(errors)) {
+    const firstError = errors.find(isRecord);
+    if (firstError) {
+      return (
+        readString(firstError.detail) ||
+        readString(firstError.title) ||
+        readString(firstError.code)
+      );
+    }
+  }
+
+  return (
+    readString(payload.detail) ||
+    readString(payload.message) ||
+    readString(payload.error)
+  );
+}
+
 /**
  * Builds headers for API requests.
  * Static deployments can include a browser-safe, rate-limited public API key
@@ -395,12 +425,14 @@ async function unifiedFetch<T>(
       if (!response.ok) {
         const errorText = await response.text();
         console.error('API Error response:', errorText);
+
+        if (!errorText) {
+          throw new ApiError(`HTTP error ${response.status}`, response.status);
+        }
+
+        let errorJson: unknown;
         try {
-          const errorJson = JSON.parse(errorText);
-          throw new ApiError(
-            errorJson.detail || 'API request failed',
-            response.status
-          );
+          errorJson = JSON.parse(errorText);
         } catch (e) {
           console.error('Error parsing API error response:', e);
           throw new ApiError(
@@ -408,6 +440,11 @@ async function unifiedFetch<T>(
             response.status
           );
         }
+
+        throw new ApiError(
+          extractApiErrorMessage(errorJson) || 'API request failed',
+          response.status
+        );
       }
 
       const jsonData = await response.json();

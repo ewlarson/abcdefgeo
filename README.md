@@ -261,6 +261,11 @@ links such as `/resources/<id>`.
 preview and pilot sites do not invite crawler traffic before an institution is
 ready to publish.
 
+`npm run build` also emits `dist/404.html` and `dist/500.html` as copies of the
+built SPA entry point. GitHub Pages uses `404.html` as its fallback for clean
+browser-routed deep links such as `/resources/<id>`; hosts that support a custom
+server-error fallback can serve `500.html`.
+
 The repository includes a GitHub Pages workflow in
 `.github/workflows/deploy.yml`. Review its branch trigger and required secrets
 before relying on it for a new deployment.

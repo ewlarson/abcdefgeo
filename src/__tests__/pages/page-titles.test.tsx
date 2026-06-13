@@ -20,6 +20,7 @@ import { ResourceView } from '../../pages/ResourceView';
 import { ResourceAdminPage } from '../../pages/ResourceAdminPage';
 import { BookmarksPage } from '../../pages/BookmarksPage';
 import { NotFoundPage } from '../../pages/NotFoundPage';
+import { ServerErrorPage } from '../../pages/ServerErrorPage';
 import { ApiProvider } from '../../context/ApiContext';
 import { DebugProvider } from '../../context/DebugContext';
 import { BookmarkProvider } from '../../context/BookmarkContext';
@@ -205,6 +206,27 @@ describe('Page titles', () => {
     ];
     const router = createMemoryRouter(routes, {
       initialEntries: ['/nonexistent'],
+    });
+    render(<RouterProvider router={router} />);
+
+    await waitFor(() => {
+      assertHasTitle();
+    });
+  });
+
+  it('ServerErrorPage has a title', async () => {
+    const routes = [
+      {
+        path: '/500',
+        element: (
+          <HelmetProvider>
+            <ServerErrorPage />
+          </HelmetProvider>
+        ),
+      },
+    ];
+    const router = createMemoryRouter(routes, {
+      initialEntries: ['/500'],
     });
     render(<RouterProvider router={router} />);
 
