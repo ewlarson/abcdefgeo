@@ -1,10 +1,17 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   clearTurnstileSessionToken,
   fetchTurnstileStatus,
   getTurnstileAction,
   getTurnstileSiteKey,
   isTurnstileConfigured,
+  TURNSTILE_REQUIRED_EVENT,
   verifyTurnstileToken,
 } from '../../services/turnstile';
 import { useI18n } from '../../hooks/useI18n';
@@ -116,6 +123,23 @@ export function TurnstileGate({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+    };
+  }, [configured]);
+
+  useEffect(() => {
+    if (!configured || typeof window === 'undefined') return;
+
+    const handleTurnstileRequired = () => {
+      clearTurnstileSessionToken();
+      setGateState('challenge');
+    };
+
+    window.addEventListener(TURNSTILE_REQUIRED_EVENT, handleTurnstileRequired);
+    return () => {
+      window.removeEventListener(
+        TURNSTILE_REQUIRED_EVENT,
+        handleTurnstileRequired
+      );
     };
   }, [configured]);
 

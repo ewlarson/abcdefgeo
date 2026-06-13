@@ -3,6 +3,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { normalizeGeometry } from '../../utils/geometryUtils';
 import { attachBasemapSwitcher } from '../../config/basemaps';
+import { leafletGestureMapOptions } from '../../config/leafletConfig';
+import { registerLeafletGestureHandling } from '../../config/leafletGestureHandling';
 
 interface LocationMapProps {
   geometry:
@@ -30,7 +32,11 @@ export const LocationMap: React.FC<LocationMapProps> = ({ geometry }) => {
 
     // Initialize map if it doesn't exist
     if (!mapRef.current) {
-      mapRef.current = L.map(mapContainer.current).setView([0, 0], 2);
+      registerLeafletGestureHandling(L);
+      mapRef.current = L.map(
+        mapContainer.current,
+        leafletGestureMapOptions
+      ).setView([0, 0], 2);
       basemapCleanupRef.current = attachBasemapSwitcher(mapRef.current, L);
     }
 

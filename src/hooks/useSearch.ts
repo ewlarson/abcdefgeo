@@ -6,6 +6,7 @@ import { useApi } from '../context/ApiContext';
 import { debugLog } from '../utils/logger';
 import type { JsonApiResponse } from '../types/api';
 import type { AdvancedClause, FacetFilter } from '../types/search';
+import { SEARCH_RESULTS_PER_PAGE } from '../constants/search';
 
 // Export the interface so it can be used in ResourceView.tsx
 export interface SearchState {
@@ -24,18 +25,19 @@ export function useSearch({ enabled = true }: { enabled?: boolean } = {}) {
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const { setLastApiUrl } = useApi();
   const sort = searchParams.get('sort') || 'relevance';
-  const view = searchParams.get('view') || 'list';
   const perPageParam = searchParams.get('per_page');
   const parsedPerPage = perPageParam ? parseInt(perPageParam, 10) : NaN;
   const perPage = Number.isFinite(parsedPerPage)
     ? parsedPerPage
-    : view === 'gallery'
-      ? 20
-      : 10;
+    : SEARCH_RESULTS_PER_PAGE;
   const searchField = searchParams.get('search_field') || 'all_fields';
   const searchParamsKey = searchParams.toString();
 
   // Parse search parameters and memoize facets to prevent infinite loops
+  const parsedSearchParams = useMemo(
+    () => parseSearchParams(searchParams),
+    [searchParams]
+  );
   const {
     query,
     page,
@@ -43,16 +45,19 @@ export function useSearch({ enabled = true }: { enabled?: boolean } = {}) {
     excludeFacets: rawExclude,
     advancedQuery: rawAdvanced,
     hasQueryParam,
-  } = parseSearchParams(searchParams);
-  const facetsString = JSON.stringify(rawFacets);
-  const facets = useMemo(() => rawFacets, [facetsString]);
-  const excludeString = JSON.stringify(rawExclude || []);
-  const excludeFacets = useMemo(() => rawExclude || [], [excludeString]);
-  const advancedString = JSON.stringify(rawAdvanced || []);
-  const advancedQuery = useMemo(
-    () => rawAdvanced || [],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rawAdvanced?.length, advancedString]
+  } = parsedSearchParams;
+  const facets = useMemo(() => rawFacets, [rawFacets]);
+  const excludeFacets = useMemo(() => rawExclude || [], [rawExclude]);
+  const advancedQuery = useMemo(() => rawAdvanced || [], [rawAdvanced]);
+  const hasFilterParam = useMemo(
+    () =>
+      Array.from(searchParams.keys()).some(
+        (key) =>
+          key.startsWith('include_filters[') ||
+          key.startsWith('exclude_filters[') ||
+          key.startsWith('fq[')
+      ),
+    [searchParams]
   );
 
   useEffect(() => {
@@ -68,6 +73,7 @@ export function useSearch({ enabled = true }: { enabled?: boolean } = {}) {
       sort,
       searchField,
       advancedClauses: advancedQuery.length,
+      hasFilterParam,
       setLastApiUrl: typeof setLastApiUrl,
     });
 
@@ -81,11 +87,12 @@ export function useSearch({ enabled = true }: { enabled?: boolean } = {}) {
     // Only fetch if we have a query parameter (even if empty) or facets
     if (
       !hasQueryParam &&
+      !hasFilterParam &&
       (!facets || facets.length === 0) &&
       (!excludeFacets || excludeFacets.length === 0) &&
       (!advancedQuery || advancedQuery.length === 0)
     ) {
-      debugLog('⏭️ Skipping search - no query or facets');
+      debugLog('⏭️ Skipping search - no query or filters');
       setResults(null);
       setResultsKey(null);
       setError(null);
@@ -164,6 +171,7 @@ export function useSearch({ enabled = true }: { enabled?: boolean } = {}) {
     searchField,
     searchParamsKey,
     hasQueryParam,
+    hasFilterParam,
     enabled,
     setLastApiUrl,
   ]);

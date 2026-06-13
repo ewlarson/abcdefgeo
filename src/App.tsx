@@ -11,6 +11,7 @@ import { SearchPage } from './pages/SearchPage';
 import { ResourceView } from './pages/ResourceView';
 import { ResourceAdminPage } from './pages/ResourceAdminPage';
 import { HomePage } from './pages/HomePage';
+import { MiradorViewerPage } from './pages/MiradorViewerPage';
 import { BookmarksPage } from './pages/BookmarksPage';
 import { FixturesTestPage } from './pages/FixturesTestPage';
 import { ProviderPillsTestPage } from './pages/ProviderPillsTestPage';
@@ -93,6 +94,7 @@ function App() {
       <TurnstileGate>
         <Routes>
           <Route path="/search" element={<SearchPage />} />
+          <Route path="/mirador" element={<MiradorViewerPage />} />
           <Route path="/bookmarks" element={<BookmarksPage />} />
           <Route path="/resources/:id/admin" element={<ResourceAdminPage />} />
           <Route path="/resources/:id" element={<ResourceView />} />

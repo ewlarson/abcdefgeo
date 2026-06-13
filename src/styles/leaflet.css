@@ -154,3 +154,20 @@
 .leaflet-control-attribution a {
   color: #1d4ed8 !important;
 }
+
+.leaflet-container.leaflet-gesture-handling-scroll-warning::after {
+  content: attr(data-gesture-handling-scroll-content);
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.55);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+  pointer-events: none;
+}

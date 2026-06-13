@@ -18,12 +18,7 @@ function hasGeoBbox(searchParams: URLSearchParams): boolean {
   const bottomRightLon = searchParams.get(
     'include_filters[geo][bottom_right][lon]'
   );
-  return !!(
-    topLeftLat &&
-    topLeftLon &&
-    bottomRightLat &&
-    bottomRightLon
-  );
+  return !!(topLeftLat && topLeftLon && bottomRightLat && bottomRightLon);
 }
 
 interface LocationFacetCollapsibleProps {
@@ -39,7 +34,7 @@ export function LocationFacetCollapsible({
 }: LocationFacetCollapsibleProps) {
   const { t } = useI18n();
   const [searchParams] = useSearchParams();
-  const currentView = searchParams.get('view') || 'list';
+  const currentView = searchParams.get('view') || 'map';
   const isForcedOpen = hasGeoBbox(searchParams);
   const isDefaultOpen = currentView === 'map';
   const isOpen =
@@ -79,7 +74,7 @@ export function LocationFacetCollapsible({
         id="filter-location-heading"
         className="flex items-center justify-between cursor-pointer select-none py-2"
       >
-        <h3 className="font-semibold text-gray-900">Location</h3>
+        <h3 className="font-semibold text-gray-900">{t('common.place')}</h3>
         <ChevronDown className="h-4 w-4 text-gray-500 transition-transform group-open:rotate-180 shrink-0" />
       </summary>
       {isOpen ? (

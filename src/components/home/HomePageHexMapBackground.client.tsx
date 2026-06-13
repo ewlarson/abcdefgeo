@@ -3,12 +3,12 @@ import { Link, useNavigate } from 'react-router';
 import { ChevronLeft, ChevronRight, Home, Pause, Play } from 'lucide-react';
 import { MapContainer, Rectangle, useMap, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
-import { GestureHandling } from 'leaflet-gesture-handling';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet-gesture-handling/dist/leaflet-gesture-handling.css';
 import { cellArea, UNITS } from 'h3-js';
+import { leafletGestureMapOptions } from '../../config/leafletConfig';
+import { registerLeafletGestureHandling } from '../../config/leafletGestureHandling';
 
-L.Map.addInitHook('addHandler', 'gestureHandling', GestureHandling);
+registerLeafletGestureHandling(L);
 import { MapUpdaterHex, type HexHoverData } from '../map/MapUpdaterHex';
 import { HexLayerToggleControl } from '../map/HexLayerToggleControl';
 import { BboxRectangleSelector } from '../map/BboxRectangleSelector';
@@ -20,7 +20,10 @@ import type { GeoDocumentDetails } from '../../types/api';
 import { getResourceIcon } from '../../utils/resourceIcons';
 import { ResultCardPill } from '../search/ResultCardPill';
 import { formatCount } from '../../utils/formatNumber';
-import { parseBboxToLeafletBounds } from '../../utils/bbox';
+import {
+  normalizeBboxSearchEnvelope,
+  parseBboxToLeafletBounds,
+} from '../../utils/bbox';
 import {
   getSavedHexLayerEnabled,
   saveHexLayerEnabled,
@@ -265,14 +268,28 @@ function SearchHereControl() {
     const bounds = map.getBounds();
     const ne = bounds.getNorthEast();
     const sw = bounds.getSouthWest();
+    const bbox = normalizeBboxSearchEnvelope(sw.lng, sw.lat, ne.lng, ne.lat);
+    if (!bbox) return;
     const params = new URLSearchParams();
     params.set('include_filters[geo][type]', 'bbox');
     params.set('include_filters[geo][field]', 'dcat_bbox');
     params.set('include_filters[geo][relation]', 'intersects');
-    params.set('include_filters[geo][top_left][lat]', ne.lat.toString());
-    params.set('include_filters[geo][top_left][lon]', sw.lng.toString());
-    params.set('include_filters[geo][bottom_right][lat]', sw.lat.toString());
-    params.set('include_filters[geo][bottom_right][lon]', ne.lng.toString());
+    params.set(
+      'include_filters[geo][top_left][lat]',
+      bbox.topLeft.lat.toString()
+    );
+    params.set(
+      'include_filters[geo][top_left][lon]',
+      bbox.topLeft.lon.toString()
+    );
+    params.set(
+      'include_filters[geo][bottom_right][lat]',
+      bbox.bottomRight.lat.toString()
+    );
+    params.set(
+      'include_filters[geo][bottom_right][lon]',
+      bbox.bottomRight.lon.toString()
+    );
     navigate(`/search?${params.toString()}`);
   };
 
@@ -537,8 +554,7 @@ export function HomePageHexMapBackground() {
           keyboard={true}
           attributionControl={true}
           zoomAnimationThreshold={1}
-          // @ts-expect-error - gestureHandling is a leaflet-gesture-handling plugin option
-          gestureHandling={true}
+          {...leafletGestureMapOptions}
         >
           <ZoomControl position="topleft" />
           <MapGeosearchControl />
