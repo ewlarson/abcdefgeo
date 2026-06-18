@@ -18,11 +18,6 @@ import GeoTIFF from 'ol/source/GeoTIFF.js';
 import { PMTilesVectorSource } from 'ol-pmtiles';
 import type MapBrowserEvent from 'ol/MapBrowserEvent';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style.js';
-import {
-  buildPresentation3ManifestFromImageInfo,
-  fetchIiifImageInfo,
-  normalizeImageServiceId,
-} from '../../utils/iiif';
 import { buildAppHashRouteUrl } from '../../utils/appRoutes';
 import { ensureOpenLayersProjection } from '../../utils/openlayersProjection';
 
@@ -445,7 +440,8 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
   const protocol = data.meta?.ui?.viewer?.protocol || '';
   const endpoint = data.meta?.ui?.viewer?.endpoint || '';
   const geometry = data.meta?.ui?.viewer?.geometry;
-  const available = !!protocol && !!endpoint && !!geometry;
+  const available =
+    !!protocol && !!endpoint && (protocol === 'iiif_image' || !!geometry);
   const layerIdentifier =
     data.attributes.ogm?.gbl_wxsIdentifier_s ||
     data.attributes.ogm?.gbl_wxsidentifier_s ||
@@ -473,7 +469,7 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
 
   // Helper function to determine viewer type
   const getViewerType = (protocol: string) => {
-    if (['iiif_manifest', 'iiif_image'].includes(protocol)) {
+    if (protocol === 'iiif_manifest') {
       return 'mirador';
     }
     if (['cog', 'pmtiles'].includes(protocol)) {
@@ -491,54 +487,10 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
   // until after mount (prevents hydration mismatches and guarantees DOM insertion
   // after controllers are registered).
   const [mounted, setMounted] = useState(false);
-  const [iiifManifestUrl, setIiifManifestUrl] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    if (!mounted || protocol !== 'iiif_image' || !endpoint) {
-      setIiifManifestUrl(null);
-      return;
-    }
-
-    let cancelled = false;
-    let objectUrl: string | null = null;
-
-    const loadManifest = async () => {
-      try {
-        const info = await fetchIiifImageInfo(endpoint);
-        const imageServiceId = normalizeImageServiceId(endpoint, info);
-        const manifest = buildPresentation3ManifestFromImageInfo({
-          manifestId: `${endpoint.replace(/\/$/, '')}/manifest`,
-          imageServiceId,
-          info,
-        });
-
-        if (cancelled) return;
-
-        objectUrl = URL.createObjectURL(
-          new Blob([JSON.stringify(manifest)], { type: 'application/json' })
-        );
-        setIiifManifestUrl(objectUrl);
-      } catch (error) {
-        console.error('Failed to build IIIF manifest for viewer:', error);
-        if (!cancelled) {
-          setIiifManifestUrl(null);
-        }
-      }
-    };
-
-    void loadManifest();
-
-    return () => {
-      cancelled = true;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
-    };
-  }, [endpoint, mounted, protocol]);
 
   function formatProtocol(protocol: string): string | null {
     if (protocol === 'arcgis_dynamic_map_layer') {
@@ -558,6 +510,9 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
     }
     if (protocol === 'arcgis_image_map_layer') {
       return 'ImageMapLayer';
+    }
+    if (protocol === 'iiif_image') {
+      return 'Iiif';
     }
     if (protocol === 'open_index_map') {
       return 'IndexMap';
@@ -585,10 +540,9 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
       }
 
       const pageOrigin = window.location.origin;
-      const manifestUrl =
-        protocol === 'iiif_image'
-          ? iiifManifestUrl
-          : new URL(endpoint, pageOrigin).toString();
+      const manifestUrl = endpoint
+        ? new URL(endpoint, pageOrigin).toString()
+        : '';
 
       if (!manifestUrl) {
         return (
@@ -744,9 +698,7 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
             data-controller="leaflet-viewer"
             data-leaflet-viewer-available-value={available}
             data-leaflet-viewer-map-geom-value={JSON.stringify(geometry)}
-            data-leaflet-viewer-layer-id-value={
-              data.attributes.ogm.gbl_wxsIdentifier_s || ''
-            }
+            data-leaflet-viewer-layer-id-value={layerIdentifier}
             data-leaflet-viewer-options-value={JSON.stringify(
               leafletViewerOptions
             )}
