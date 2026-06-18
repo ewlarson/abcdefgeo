@@ -35,7 +35,7 @@ site:
   supported_locales:
     - "en"
   routing:
-    mode: "browser"
+    mode: "hash"
   icons:
     manifest: "/theme-icons/${themeId}/manifest.webmanifest"
     favicon: "/theme-icons/${themeId}/favicon.ico"

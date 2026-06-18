@@ -92,8 +92,8 @@ ready for your site to default to that institution.
 Configure these sections first:
 
 - `id` and `label`: stable theme id and human-readable institution label.
-- `site`: title, short name, description, locale, routing mode, canonical URL,
-  manifest colors, and the theme icon pack.
+- `site`: title, short name, description, locale, shared hash routing,
+  canonical URL, manifest colors, and the theme icon pack.
 - `institution`: name, logo, logo alt text, header sizing, hero text, and hero
   description.
 - `branding`: colors, font stacks, and optional institution-hosted font
@@ -109,7 +109,7 @@ Configure these sections first:
 Create the matching favicon, Apple touch icon, and PWA PNGs under
 `public/theme-icons/<theme-id>/`, then point `site.icons` at those files. The
 site generator writes a manifest for each theme so installed PWAs reopen with
-the chosen `ogm_theme`.
+the theme's path-based hash URL.
 
 Use localized objects for user-facing copy, even when launching English-only:
 
@@ -251,10 +251,10 @@ cannot express your institutional scope cleanly, document the needed backend
 filter instead of adding frontend-only filtering that hides results after they
 arrive.
 
-## 7. Pick Routing For GitHub Pages
+## 7. Use Shared Hash Routing
 
-GitHub Pages serves static files. For this viewer, the safest Pages setting is
-hash routing:
+All themes use the same runtime router. For GitHub Pages and other static hosts,
+that router is hash based:
 
 ```yaml
 site:
@@ -262,19 +262,20 @@ site:
     mode: hash
 ```
 
-That produces URLs like `/REPO/#/search` and avoids direct-link 404s on static
-hosts that do not rewrite every route to `index.html`.
+The build emits `dist/<theme-id>/index.html` for every configured theme, so each
+theme can have a stable static URL:
 
-Use browser routing only when your host is configured with an SPA fallback:
+- `/REPO/#/` for the default theme
+- `/REPO/unr/#/` for the `unr` theme
+- `/REPO/btaa/#/resources/<id>` for a BTAA resource route
 
-```yaml
-site:
-  routing:
-    mode: browser
-```
+The hash portion is handled entirely in the browser, which avoids relying on
+GitHub Pages' `404.html` fallback for resource, search, and bookmark routes.
+This also prevents the fallback HTML from being mistaken for asset URLs such as
+thumbnails or static maps.
 
-Browser routing gives cleaner URLs like `/REPO/search`, but it needs server or
-host support for deep links.
+`npm run build` still writes `404.html` and `500.html` as copies of the SPA entry
+point for host-level fallbacks, but public links should use the hash URL shape.
 
 ## 8. Configure The Vite Base Path
 

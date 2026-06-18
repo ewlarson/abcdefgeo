@@ -1,10 +1,10 @@
 {
-  "id": "../../?ogm_theme=nyu",
+  "id": "../../nyu/",
   "name": "NYU Spatial Data Repository",
   "short_name": "NYU Spatial Data Repository",
   "description": "Search geospatial resources from New York University.",
-  "start_url": "../../?ogm_theme=nyu",
-  "scope": "../../",
+  "start_url": "../../nyu/#/",
+  "scope": "../../nyu/",
   "display": "standalone",
   "theme_color": "#57068C",
   "background_color": "#57068C",

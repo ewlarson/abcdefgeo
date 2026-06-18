@@ -16,7 +16,7 @@ site:
   show_locale_selector: true
   show_theme_selector: true
   routing:
-    mode: browser
+    mode: hash
   icons:
     manifest: /theme-icons/btaa/manifest.webmanifest
     favicon: /theme-icons/btaa/favicon.ico

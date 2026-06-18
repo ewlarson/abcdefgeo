@@ -1,10 +1,10 @@
 {
-  "id": "../../?ogm_theme=uwmadison",
+  "id": "../../uwmadison/",
   "name": "UW-Madison Geoportal",
   "short_name": "UW-Madison Geoportal",
   "description": "Search geospatial resources from the University of Wisconsin-Madison.",
-  "start_url": "../../?ogm_theme=uwmadison",
-  "scope": "../../",
+  "start_url": "../../uwmadison/#/",
+  "scope": "../../uwmadison/",
   "display": "standalone",
   "theme_color": "#C5050C",
   "background_color": "#C5050C",

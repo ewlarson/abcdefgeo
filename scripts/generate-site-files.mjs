@@ -99,9 +99,17 @@ function manifestIcon(icon, src) {
   };
 }
 
-function appendThemeParam(url, themeId) {
-  const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}ogm_theme=${encodeURIComponent(themeId)}`;
+function appendPathSegment(url, segment) {
+  const base = url.endsWith('/') ? url : `${url}/`;
+  return `${base}${encodeURIComponent(segment)}/`;
+}
+
+function themeScopeUrl(basePath, themeId) {
+  return appendPathSegment(basePath, themeId);
+}
+
+function themeStartUrl(basePath, themeId) {
+  return `${themeScopeUrl(basePath, themeId)}#/`;
 }
 
 function localPublicPathFromUrl(value) {
@@ -286,9 +294,9 @@ async function writeThemeManifest(themeId, theme) {
 
   const relativeRoot = relativeRootFromManifest(iconPack.manifest);
   const manifest = buildThemeManifest(themeId, theme, {
-    id: appendThemeParam(relativeRoot, themeId),
-    startUrl: appendThemeParam(relativeRoot, themeId),
-    scope: relativeRoot,
+    id: themeScopeUrl(relativeRoot, themeId),
+    startUrl: themeStartUrl(relativeRoot, themeId),
+    scope: themeScopeUrl(relativeRoot, themeId),
     resolveIconSrc: (src) => relativeUrlFromManifest(iconPack.manifest, src),
   });
 
@@ -351,9 +359,9 @@ async function main() {
   );
 
   const manifest = buildThemeManifest(themeId, theme, {
-    id: appendThemeParam(basePath, themeId),
-    startUrl: appendThemeParam(basePath, themeId),
-    scope: basePath,
+    id: themeScopeUrl(basePath, themeId),
+    startUrl: themeStartUrl(basePath, themeId),
+    scope: themeScopeUrl(basePath, themeId),
     resolveIconSrc: (src) => withBasePath(src, basePath),
   });
 

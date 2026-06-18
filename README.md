@@ -182,10 +182,10 @@ site:
         type: image/png
 ```
 
-`npm run generate:site` writes a web app manifest for every configured theme and
-uses `?ogm_theme=<theme-id>` as the install start URL so a launched PWA opens
-with the installed theme active. When adding a theme, create the matching icon
-pack before publishing the build.
+`npm run generate:site` writes a web app manifest for every configured theme.
+Theme manifests use path-based hash URLs such as `/my-institution/#/` so a
+launched PWA opens with the installed theme active. When adding a theme, create
+the matching icon pack before publishing the build.
 
 ## Environment Variables
 
@@ -257,6 +257,12 @@ This app builds to `dist/` and can be hosted as static files.
 `npm run generate:site` writes a deny-all `public/robots.txt` so themable
 preview and pilot sites do not invite crawler traffic before an institution is
 ready to publish.
+
+`npm run build` also emits `dist/404.html` and `dist/500.html` as copies of the
+built SPA entry point, plus `dist/<theme-id>/index.html` for every configured
+theme. GitHub Pages deployments use hash routing for all themes, with URLs such
+as `/abcdefgeo/unr/#/resources/<id>`. Hosts that support a custom server-error
+fallback can serve `500.html`.
 
 The repository includes a GitHub Pages workflow in
 `.github/workflows/deploy.yml`. Review its branch trigger and required secrets

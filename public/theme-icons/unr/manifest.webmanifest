@@ -1,10 +1,10 @@
 {
-  "id": "../../?ogm_theme=unr",
+  "id": "../../unr/",
   "name": "University of Nevada, Reno Geoportal",
   "short_name": "University Libraries",
   "description": "Search geospatial resources through a University of Nevada, Reno pilot interface powered by the BTAA Geospatial API.",
-  "start_url": "../../?ogm_theme=unr",
-  "scope": "../../",
+  "start_url": "../../unr/#/",
+  "scope": "../../unr/",
   "display": "standalone",
   "theme_color": "#041E42",
   "background_color": "#041E42",
