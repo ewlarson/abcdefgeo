@@ -342,6 +342,7 @@ describe('ResourceViewer', () => {
   });
 
   afterEach(() => {
+    window.history.replaceState(null, '', '/');
     rectSpy.mockRestore();
     vi.useRealTimers();
     vi.unstubAllGlobals();
@@ -357,7 +358,13 @@ describe('ResourceViewer', () => {
   });
 
   describe('Mirador viewer bootstrap', () => {
-    it('creates synthetic IIIF image manifests inside the sandboxed iframe', async () => {
+    it('creates synthetic IIIF image manifests inside a themed hash-routed iframe', async () => {
+      window.history.replaceState(
+        null,
+        '',
+        '/unr/#/resources/unr-74479f22-0e6b-4c13-b376-0195a7461525'
+      );
+
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
         json: vi.fn().mockResolvedValue({
@@ -386,8 +393,12 @@ describe('ResourceViewer', () => {
 
       const src = iframe?.getAttribute('src') || '';
       const miradorUrl = new URL(src);
-      expect(miradorUrl.pathname).toBe('/mirador');
-      expect(miradorUrl.searchParams.get('manifest')).toMatch(/^blob:/);
+      expect(miradorUrl.pathname).toBe('/unr/');
+      expect(miradorUrl.search).toBe('');
+      expect(miradorUrl.hash).toMatch(/^#\/mirador\?/);
+
+      const hashParams = new URLSearchParams(miradorUrl.hash.split('?')[1]);
+      expect(hashParams.get('manifest')).toMatch(/^blob:/);
       expect(iframe).not.toHaveAttribute('srcdoc');
       expect(fetchMock).toHaveBeenCalledWith(
         'https://example.com/iiif/info.json',
