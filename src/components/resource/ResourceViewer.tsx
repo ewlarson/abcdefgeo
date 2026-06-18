@@ -441,7 +441,8 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
   const protocol = data.meta?.ui?.viewer?.protocol || '';
   const endpoint = data.meta?.ui?.viewer?.endpoint || '';
   const geometry = data.meta?.ui?.viewer?.geometry;
-  const available = !!protocol && !!endpoint && !!geometry;
+  const available =
+    !!protocol && !!endpoint && (protocol === 'iiif_image' || !!geometry);
   const layerIdentifier =
     data.attributes.ogm?.gbl_wxsIdentifier_s ||
     data.attributes.ogm?.gbl_wxsidentifier_s ||
@@ -514,6 +515,9 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
     if (protocol === 'arcgis_image_map_layer') {
       return 'ImageMapLayer';
     }
+    if (protocol === 'iiif_image') {
+      return 'Iiif';
+    }
     if (protocol === 'open_index_map') {
       return 'IndexMap';
     }
@@ -556,7 +560,9 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
       }
 
       const pageOrigin = window.location.origin;
-      const manifestUrl = new URL(endpoint, pageOrigin).toString();
+      const manifestUrl = endpoint
+        ? new URL(endpoint, pageOrigin).toString()
+        : '';
 
       if (!manifestUrl) {
         return (
@@ -712,9 +718,7 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
             data-controller="leaflet-viewer"
             data-leaflet-viewer-available-value={available}
             data-leaflet-viewer-map-geom-value={JSON.stringify(geometry)}
-            data-leaflet-viewer-layer-id-value={
-              data.attributes.ogm.gbl_wxsIdentifier_s || ''
-            }
+            data-leaflet-viewer-layer-id-value={layerIdentifier}
             data-leaflet-viewer-options-value={JSON.stringify(
               leafletViewerOptions
             )}

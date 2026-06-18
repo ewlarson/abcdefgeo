@@ -215,25 +215,26 @@ const pmtilesDataWithGeometry = {
   },
 } as Parameters<typeof ResourceViewer>[0]['data'];
 
-const iiifImageDataWithGeometry = {
+const iiifImageDataWithoutGeometry = {
   attributes: { dct_references_s: {} },
   meta: {
     ui: {
       viewer: {
         protocol: 'iiif_image',
-        endpoint: 'https://example.com/iiif/info.json',
-        geometry: {
-          type: 'Polygon',
-          coordinates: [
-            [
-              [-117, 36.75],
-              [-116.75, 36.75],
-              [-116.75, 37],
-              [-117, 37],
-              [-117, 36.75],
-            ],
-          ],
-        },
+        endpoint:
+          'https://s3.amazonaws.com/ogm-metadata-studio/uploads/unr-74479f22-0e6b-4c13-b376-0195a7461525/iiif/info.json',
+      },
+    },
+  },
+} as Parameters<typeof ResourceViewer>[0]['data'];
+
+const iiifManifestData = {
+  attributes: { dct_references_s: {} },
+  meta: {
+    ui: {
+      viewer: {
+        protocol: 'iiif_manifest',
+        endpoint: 'https://example.com/iiif/manifest.json',
       },
     },
   },
@@ -397,7 +398,7 @@ describe('ResourceViewer', () => {
       vi.stubGlobal('fetch', fetchMock);
 
       const { container } = render(
-        <ResourceViewer data={iiifImageDataWithGeometry} pageValue="SHOW" />
+        <ResourceViewer data={iiifImageDataWithoutGeometry} pageValue="SHOW" />
       );
 
       await flushReactWork();
@@ -409,7 +410,7 @@ describe('ResourceViewer', () => {
       expect(container.querySelector('#leaflet-viewer')).toBeNull();
       expect(container.querySelector('.leaflet-container')).not.toBeNull();
       expect(fetchMock).toHaveBeenCalledWith(
-        'https://example.com/iiif/info.json',
+        'https://s3.amazonaws.com/ogm-metadata-studio/uploads/unr-74479f22-0e6b-4c13-b376-0195a7461525/iiif/info.json',
         {
           headers: {
             Accept: 'application/json',
@@ -418,7 +419,7 @@ describe('ResourceViewer', () => {
       );
     });
 
-    it('uses Mirador for IIIF presentation manifests', async () => {
+    it('routes IIIF Presentation manifests through a themed hash-routed iframe', async () => {
       window.history.replaceState(
         null,
         '',
@@ -426,10 +427,13 @@ describe('ResourceViewer', () => {
       );
 
       const { container } = render(
-        <ResourceViewer data={iiifManifestDataWithGeometry} pageValue="SHOW" />
+        <ResourceViewer data={iiifManifestData} pageValue="SHOW" />
       );
 
       await flushReactWork();
+      await act(async () => {
+        await vi.runAllTimersAsync();
+      });
 
       const iframe = container.querySelector('iframe.viewer');
       expect(iframe).not.toBeNull();
