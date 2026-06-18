@@ -11,11 +11,16 @@ import {
   isAbsoluteUrl,
   resolveThemeAssetUrl,
 } from '../../utils/themeUrls';
+import {
+  buildAppHashRouteUrl,
+  getThemeScopedAppBasePath,
+} from '../../utils/appRoutes';
 import { zoomToResolution } from '../../utils/h3Resolution';
 
 describe('small UI utilities', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
     window.history.replaceState(null, '', '/');
     window.localStorage.clear();
     window.sessionStorage.clear();
@@ -66,6 +71,30 @@ describe('small UI utilities', () => {
     );
     expect(resolveThemeAssetUrl('/logo.svg')).toBe('/logo.svg');
     expect(resolveThemeAssetUrl('images/logo.svg')).toBe('images/logo.svg');
+  });
+
+  it('builds internal hash route URLs inside the current theme path', () => {
+    vi.stubEnv('BASE_URL', '/abcdefgeo/');
+    window.history.replaceState(
+      null,
+      '',
+      '/abcdefgeo/unr/#/resources/unr-example'
+    );
+
+    expect(getThemeScopedAppBasePath()).toBe('/abcdefgeo/unr/');
+
+    const url = new URL(
+      buildAppHashRouteUrl(
+        '/mirador',
+        new URLSearchParams({ manifest: 'blob:http://localhost/manifest' })
+      )
+    );
+
+    expect(url.pathname).toBe('/abcdefgeo/unr/');
+    expect(url.search).toBe('');
+    expect(url.hash).toBe(
+      '#/mirador?manifest=blob%3Ahttp%3A%2F%2Flocalhost%2Fmanifest'
+    );
   });
 
   it('maps Leaflet zoom levels to H3 resolutions', () => {

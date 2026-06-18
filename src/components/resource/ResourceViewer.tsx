@@ -23,6 +23,7 @@ import {
   fetchIiifImageInfo,
   normalizeImageServiceId,
 } from '../../utils/iiif';
+import { buildAppHashRouteUrl } from '../../utils/appRoutes';
 import { ensureOpenLayersProjection } from '../../utils/openlayersProjection';
 
 interface ResourceViewerProps {
@@ -595,10 +596,10 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
         );
       }
 
-      const appBasePath = import.meta.env.BASE_URL || '/';
-      const miradorPath = `${appBasePath.replace(/\/$/, '')}/mirador`;
-      const miradorUrl = new URL(miradorPath, pageOrigin);
-      miradorUrl.searchParams.set('manifest', manifestUrl);
+      const miradorUrl = buildAppHashRouteUrl(
+        '/mirador',
+        new URLSearchParams({ manifest: manifestUrl })
+      );
 
       return (
         <iframe
@@ -610,7 +611,7 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
           // Required for Fullscreen API inside sandboxed iframes.
           allow="fullscreen"
           allowFullScreen
-          src={miradorUrl.toString()}
+          src={miradorUrl}
         />
       );
     }
