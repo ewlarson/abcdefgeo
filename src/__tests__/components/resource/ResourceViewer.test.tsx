@@ -239,6 +239,30 @@ const iiifImageDataWithGeometry = {
   },
 } as Parameters<typeof ResourceViewer>[0]['data'];
 
+const iiifManifestDataWithGeometry = {
+  attributes: { dct_references_s: {} },
+  meta: {
+    ui: {
+      viewer: {
+        protocol: 'iiif_manifest',
+        endpoint: 'https://example.com/iiif/manifest.json',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [-117, 36.75],
+              [-116.75, 36.75],
+              [-116.75, 37],
+              [-117, 37],
+              [-117, 36.75],
+            ],
+          ],
+        },
+      },
+    },
+  },
+} as Parameters<typeof ResourceViewer>[0]['data'];
+
 const wmsDataWithGeometry = {
   attributes: {
     dct_references_s: {},
@@ -357,14 +381,8 @@ describe('ResourceViewer', () => {
     });
   });
 
-  describe('Mirador viewer bootstrap', () => {
-    it('creates synthetic IIIF image manifests inside a themed hash-routed iframe', async () => {
-      window.history.replaceState(
-        null,
-        '',
-        '/unr/#/resources/unr-74479f22-0e6b-4c13-b376-0195a7461525'
-      );
-
+  describe('IIIF viewer bootstrap', () => {
+    it('routes IIIF image services to the local Leaflet image viewer', async () => {
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
         json: vi.fn().mockResolvedValue({
@@ -373,12 +391,42 @@ describe('ResourceViewer', () => {
           width: 1200,
           height: 800,
           profile: ['http://iiif.io/api/image/2/level0.json'],
+          tiles: [{ width: 512, scaleFactors: [1, 2, 4] }],
         }),
       });
       vi.stubGlobal('fetch', fetchMock);
 
       const { container } = render(
         <ResourceViewer data={iiifImageDataWithGeometry} pageValue="SHOW" />
+      );
+
+      await flushReactWork();
+      await act(async () => {
+        await vi.runAllTimersAsync();
+      });
+
+      expect(container.querySelector('iframe.viewer')).toBeNull();
+      expect(container.querySelector('#leaflet-viewer')).toBeNull();
+      expect(container.querySelector('.leaflet-container')).not.toBeNull();
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://example.com/iiif/info.json',
+        {
+          headers: {
+            Accept: 'application/json',
+          },
+        }
+      );
+    });
+
+    it('uses Mirador for IIIF presentation manifests', async () => {
+      window.history.replaceState(
+        null,
+        '',
+        '/unr/#/resources/unr-74479f22-0e6b-4c13-b376-0195a7461525'
+      );
+
+      const { container } = render(
+        <ResourceViewer data={iiifManifestDataWithGeometry} pageValue="SHOW" />
       );
 
       await flushReactWork();
@@ -398,16 +446,10 @@ describe('ResourceViewer', () => {
       expect(miradorUrl.hash).toMatch(/^#\/mirador\?/);
 
       const hashParams = new URLSearchParams(miradorUrl.hash.split('?')[1]);
-      expect(hashParams.get('manifest')).toMatch(/^blob:/);
-      expect(iframe).not.toHaveAttribute('srcdoc');
-      expect(fetchMock).toHaveBeenCalledWith(
-        'https://example.com/iiif/info.json',
-        {
-          headers: {
-            Accept: 'application/json',
-          },
-        }
+      expect(hashParams.get('manifest')).toBe(
+        'https://example.com/iiif/manifest.json'
       );
+      expect(iframe).not.toHaveAttribute('srcdoc');
     });
   });
 

@@ -18,13 +18,9 @@ import GeoTIFF from 'ol/source/GeoTIFF.js';
 import { PMTilesVectorSource } from 'ol-pmtiles';
 import type MapBrowserEvent from 'ol/MapBrowserEvent';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style.js';
-import {
-  buildPresentation3ManifestFromImageInfo,
-  fetchIiifImageInfo,
-  normalizeImageServiceId,
-} from '../../utils/iiif';
 import { buildAppHashRouteUrl } from '../../utils/appRoutes';
 import { ensureOpenLayersProjection } from '../../utils/openlayersProjection';
+import { IiifImageLeafletViewer } from './IiifImageLeafletViewer';
 
 interface ResourceViewerProps {
   data: {
@@ -473,7 +469,10 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
 
   // Helper function to determine viewer type
   const getViewerType = (protocol: string) => {
-    if (['iiif_manifest', 'iiif_image'].includes(protocol)) {
+    if (protocol === 'iiif_image') {
+      return 'iiif-image';
+    }
+    if (protocol === 'iiif_manifest') {
       return 'mirador';
     }
     if (['cog', 'pmtiles'].includes(protocol)) {
@@ -491,54 +490,10 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
   // until after mount (prevents hydration mismatches and guarantees DOM insertion
   // after controllers are registered).
   const [mounted, setMounted] = useState(false);
-  const [iiifManifestUrl, setIiifManifestUrl] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    if (!mounted || protocol !== 'iiif_image' || !endpoint) {
-      setIiifManifestUrl(null);
-      return;
-    }
-
-    let cancelled = false;
-    let objectUrl: string | null = null;
-
-    const loadManifest = async () => {
-      try {
-        const info = await fetchIiifImageInfo(endpoint);
-        const imageServiceId = normalizeImageServiceId(endpoint, info);
-        const manifest = buildPresentation3ManifestFromImageInfo({
-          manifestId: `${endpoint.replace(/\/$/, '')}/manifest`,
-          imageServiceId,
-          info,
-        });
-
-        if (cancelled) return;
-
-        objectUrl = URL.createObjectURL(
-          new Blob([JSON.stringify(manifest)], { type: 'application/json' })
-        );
-        setIiifManifestUrl(objectUrl);
-      } catch (error) {
-        console.error('Failed to build IIIF manifest for viewer:', error);
-        if (!cancelled) {
-          setIiifManifestUrl(null);
-        }
-      }
-    };
-
-    void loadManifest();
-
-    return () => {
-      cancelled = true;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
-    };
-  }, [endpoint, mounted, protocol]);
 
   function formatProtocol(protocol: string): string | null {
     if (protocol === 'arcgis_dynamic_map_layer') {
@@ -574,6 +529,22 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
   const isWmsItem = protocol === 'wms';
 
   switch (viewerType) {
+    case 'iiif-image': {
+      if (!mounted) {
+        return (
+          <div className="viewer h-[600px] text-gray-500">Loading map…</div>
+        );
+      }
+
+      if (!endpoint) {
+        return null;
+      }
+
+      return (
+        <IiifImageLeafletViewer key={viewerInstanceKey} endpoint={endpoint} />
+      );
+    }
+
     case 'mirador': {
       // IMPORTANT: Mirador must not be allowed to leak global styles/scripts into the
       // parent document (it has in practice). We sandbox it in an iframe, similar to
@@ -585,10 +556,7 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
       }
 
       const pageOrigin = window.location.origin;
-      const manifestUrl =
-        protocol === 'iiif_image'
-          ? iiifManifestUrl
-          : new URL(endpoint, pageOrigin).toString();
+      const manifestUrl = new URL(endpoint, pageOrigin).toString();
 
       if (!manifestUrl) {
         return (
