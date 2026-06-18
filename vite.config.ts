@@ -91,6 +91,10 @@ export default defineConfig(({ mode }) => {
     },
     resolve: {
       alias: {
+        'geoblacklight/controllers/leaflet_viewer_controller': path.resolve(
+          __dirname,
+          'src/controllers/leaflet_viewer_controller.js'
+        ),
         geoblacklight: path.resolve(
           __dirname,
           'node_modules/@geoblacklight/frontend/app/javascript/geoblacklight'

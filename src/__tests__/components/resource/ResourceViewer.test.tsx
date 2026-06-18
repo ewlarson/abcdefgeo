@@ -215,25 +215,26 @@ const pmtilesDataWithGeometry = {
   },
 } as Parameters<typeof ResourceViewer>[0]['data'];
 
-const iiifImageDataWithGeometry = {
+const iiifImageDataWithoutGeometry = {
   attributes: { dct_references_s: {} },
   meta: {
     ui: {
       viewer: {
         protocol: 'iiif_image',
-        endpoint: 'https://example.com/iiif/info.json',
-        geometry: {
-          type: 'Polygon',
-          coordinates: [
-            [
-              [-117, 36.75],
-              [-116.75, 36.75],
-              [-116.75, 37],
-              [-117, 37],
-              [-117, 36.75],
-            ],
-          ],
-        },
+        endpoint:
+          'https://s3.amazonaws.com/ogm-metadata-studio/uploads/unr-74479f22-0e6b-4c13-b376-0195a7461525/iiif/info.json',
+      },
+    },
+  },
+} as Parameters<typeof ResourceViewer>[0]['data'];
+
+const iiifManifestData = {
+  attributes: { dct_references_s: {} },
+  meta: {
+    ui: {
+      viewer: {
+        protocol: 'iiif_manifest',
+        endpoint: 'https://example.com/iiif/manifest.json',
       },
     },
   },
@@ -358,27 +359,15 @@ describe('ResourceViewer', () => {
   });
 
   describe('Mirador viewer bootstrap', () => {
-    it('creates synthetic IIIF image manifests inside a themed hash-routed iframe', async () => {
+    it('routes IIIF Presentation manifests through a themed hash-routed iframe', async () => {
       window.history.replaceState(
         null,
         '',
         '/unr/#/resources/unr-74479f22-0e6b-4c13-b376-0195a7461525'
       );
 
-      const fetchMock = vi.fn().mockResolvedValue({
-        ok: true,
-        json: vi.fn().mockResolvedValue({
-          '@context': 'http://iiif.io/api/image/2/context.json',
-          '@id': 'https://example.com/iiif',
-          width: 1200,
-          height: 800,
-          profile: ['http://iiif.io/api/image/2/level0.json'],
-        }),
-      });
-      vi.stubGlobal('fetch', fetchMock);
-
       const { container } = render(
-        <ResourceViewer data={iiifImageDataWithGeometry} pageValue="SHOW" />
+        <ResourceViewer data={iiifManifestData} pageValue="SHOW" />
       );
 
       await flushReactWork();
@@ -398,16 +387,10 @@ describe('ResourceViewer', () => {
       expect(miradorUrl.hash).toMatch(/^#\/mirador\?/);
 
       const hashParams = new URLSearchParams(miradorUrl.hash.split('?')[1]);
-      expect(hashParams.get('manifest')).toMatch(/^blob:/);
-      expect(iframe).not.toHaveAttribute('srcdoc');
-      expect(fetchMock).toHaveBeenCalledWith(
-        'https://example.com/iiif/info.json',
-        {
-          headers: {
-            Accept: 'application/json',
-          },
-        }
+      expect(hashParams.get('manifest')).toBe(
+        'https://example.com/iiif/manifest.json'
       );
+      expect(iframe).not.toHaveAttribute('srcdoc');
     });
   });
 
@@ -469,6 +452,33 @@ describe('ResourceViewer', () => {
   });
 
   describe('Leaflet-backed viewer remounts', () => {
+    it('renders IIIF Image API endpoints through Leaflet IIIF instead of Mirador', async () => {
+      const { container } = render(
+        <ResourceViewer data={iiifImageDataWithoutGeometry} pageValue="SHOW" />
+      );
+
+      await act(async () => {});
+
+      expect(container.querySelector('iframe[title="Mirador viewer"]')).toBe(
+        null
+      );
+
+      const viewer = container.querySelector('#leaflet-viewer');
+      expect(viewer).not.toBeNull();
+      expect(viewer?.getAttribute('data-leaflet-viewer-protocol-value')).toBe(
+        'Iiif'
+      );
+      expect(viewer?.getAttribute('data-leaflet-viewer-available-value')).toBe(
+        'true'
+      );
+      expect(viewer?.getAttribute('data-leaflet-viewer-url-value')).toBe(
+        'https://s3.amazonaws.com/ogm-metadata-studio/uploads/unr-74479f22-0e6b-4c13-b376-0195a7461525/iiif/info.json'
+      );
+      expect(viewer?.hasAttribute('data-leaflet-viewer-map-geom-value')).toBe(
+        false
+      );
+    });
+
     it('replaces the viewer container when the resource changes', async () => {
       const { rerender, container } = render(
         <ResourceViewer data={wmsDataWithGeometry} pageValue="SHOW" />

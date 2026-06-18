@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router';
 
 type MiradorConfig = {
   id: string;
@@ -49,21 +50,17 @@ type MiradorDownloadPluginModule = {
 
 const MIRADOR_ROOT_ID = 'mirador-root';
 
-function getManifestUrl() {
-  if (typeof window === 'undefined') return '';
-  return new URL(window.location.href).searchParams.get('manifest') ?? '';
-}
-
 function getViewer(module: MiradorModule) {
   return module.default?.viewer ?? module.viewer;
 }
 
 export function MiradorViewerPage() {
   const instanceRef = useRef<MiradorInstance | null>(null);
+  const [searchParams] = useSearchParams();
+  const manifestUrl = searchParams.get('manifest') ?? '';
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const manifestUrl = getManifestUrl();
     if (!manifestUrl) {
       setError('Missing IIIF manifest URL.');
       return;
@@ -129,7 +126,7 @@ export function MiradorViewerPage() {
       instanceRef.current?.destroy?.();
       instanceRef.current = null;
     };
-  }, []);
+  }, [manifestUrl]);
 
   return (
     <main className="h-screen w-screen bg-white">
