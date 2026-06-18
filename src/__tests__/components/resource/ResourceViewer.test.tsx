@@ -240,6 +240,30 @@ const iiifManifestData = {
   },
 } as Parameters<typeof ResourceViewer>[0]['data'];
 
+const iiifManifestDataWithGeometry = {
+  attributes: { dct_references_s: {} },
+  meta: {
+    ui: {
+      viewer: {
+        protocol: 'iiif_manifest',
+        endpoint: 'https://example.com/iiif/manifest.json',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [-117, 36.75],
+              [-116.75, 36.75],
+              [-116.75, 37],
+              [-117, 37],
+              [-117, 36.75],
+            ],
+          ],
+        },
+      },
+    },
+  },
+} as Parameters<typeof ResourceViewer>[0]['data'];
+
 const wmsDataWithGeometry = {
   attributes: {
     dct_references_s: {},
@@ -358,7 +382,43 @@ describe('ResourceViewer', () => {
     });
   });
 
-  describe('Mirador viewer bootstrap', () => {
+  describe('IIIF viewer bootstrap', () => {
+    it('routes IIIF image services to the local Leaflet image viewer', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          '@context': 'http://iiif.io/api/image/2/context.json',
+          '@id': 'https://example.com/iiif',
+          width: 1200,
+          height: 800,
+          profile: ['http://iiif.io/api/image/2/level0.json'],
+          tiles: [{ width: 512, scaleFactors: [1, 2, 4] }],
+        }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      const { container } = render(
+        <ResourceViewer data={iiifImageDataWithoutGeometry} pageValue="SHOW" />
+      );
+
+      await flushReactWork();
+      await act(async () => {
+        await vi.runAllTimersAsync();
+      });
+
+      expect(container.querySelector('iframe.viewer')).toBeNull();
+      expect(container.querySelector('#leaflet-viewer')).toBeNull();
+      expect(container.querySelector('.leaflet-container')).not.toBeNull();
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://s3.amazonaws.com/ogm-metadata-studio/uploads/unr-74479f22-0e6b-4c13-b376-0195a7461525/iiif/info.json',
+        {
+          headers: {
+            Accept: 'application/json',
+          },
+        }
+      );
+    });
+
     it('routes IIIF Presentation manifests through a themed hash-routed iframe', async () => {
       window.history.replaceState(
         null,
@@ -371,6 +431,9 @@ describe('ResourceViewer', () => {
       );
 
       await flushReactWork();
+      await act(async () => {
+        await vi.runAllTimersAsync();
+      });
 
       const iframe = container.querySelector('iframe.viewer');
       expect(iframe).not.toBeNull();
@@ -452,33 +515,6 @@ describe('ResourceViewer', () => {
   });
 
   describe('Leaflet-backed viewer remounts', () => {
-    it('renders IIIF Image API endpoints through Leaflet IIIF instead of Mirador', async () => {
-      const { container } = render(
-        <ResourceViewer data={iiifImageDataWithoutGeometry} pageValue="SHOW" />
-      );
-
-      await act(async () => {});
-
-      expect(container.querySelector('iframe[title="Mirador viewer"]')).toBe(
-        null
-      );
-
-      const viewer = container.querySelector('#leaflet-viewer');
-      expect(viewer).not.toBeNull();
-      expect(viewer?.getAttribute('data-leaflet-viewer-protocol-value')).toBe(
-        'Iiif'
-      );
-      expect(viewer?.getAttribute('data-leaflet-viewer-available-value')).toBe(
-        'true'
-      );
-      expect(viewer?.getAttribute('data-leaflet-viewer-url-value')).toBe(
-        'https://s3.amazonaws.com/ogm-metadata-studio/uploads/unr-74479f22-0e6b-4c13-b376-0195a7461525/iiif/info.json'
-      );
-      expect(viewer?.hasAttribute('data-leaflet-viewer-map-geom-value')).toBe(
-        false
-      );
-    });
-
     it('replaces the viewer container when the resource changes', async () => {
       const { rerender, container } = render(
         <ResourceViewer data={wmsDataWithGeometry} pageValue="SHOW" />

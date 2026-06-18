@@ -20,6 +20,7 @@ import type MapBrowserEvent from 'ol/MapBrowserEvent';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style.js';
 import { buildAppHashRouteUrl } from '../../utils/appRoutes';
 import { ensureOpenLayersProjection } from '../../utils/openlayersProjection';
+import { IiifImageLeafletViewer } from './IiifImageLeafletViewer';
 
 interface ResourceViewerProps {
   data: {
@@ -469,6 +470,9 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
 
   // Helper function to determine viewer type
   const getViewerType = (protocol: string) => {
+    if (protocol === 'iiif_image') {
+      return 'iiif-image';
+    }
     if (protocol === 'iiif_manifest') {
       return 'mirador';
     }
@@ -529,6 +533,22 @@ export function ResourceViewer({ data, pageValue }: ResourceViewerProps) {
   const isWmsItem = protocol === 'wms';
 
   switch (viewerType) {
+    case 'iiif-image': {
+      if (!mounted) {
+        return (
+          <div className="viewer h-[600px] text-gray-500">Loading map…</div>
+        );
+      }
+
+      if (!endpoint) {
+        return null;
+      }
+
+      return (
+        <IiifImageLeafletViewer key={viewerInstanceKey} endpoint={endpoint} />
+      );
+    }
+
     case 'mirador': {
       // IMPORTANT: Mirador must not be allowed to leak global styles/scripts into the
       // parent document (it has in practice). We sandbox it in an iframe, similar to

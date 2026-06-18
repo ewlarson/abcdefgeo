@@ -100,6 +100,9 @@ export const messages = {
       pageTitle: 'Aardvark Metadata',
       pageTitleWithTitle: 'Aardvark Metadata: {title}',
     },
+    resource: {
+      viewerLoadError: 'Unable to load the image viewer.',
+    },
     search: {
       customArea: 'Custom area',
       didYouMean: 'Did you mean:',
@@ -245,6 +248,9 @@ export const messages = {
       pageDescription: 'Respuesta JSON completa del recurso desde la API.',
       pageTitle: 'Metadatos de Aardvark',
       pageTitleWithTitle: 'Metadatos de Aardvark: {title}',
+    },
+    resource: {
+      viewerLoadError: 'No se pudo cargar el visor de imágenes.',
     },
     search: {
       customArea: 'Área personalizada',
