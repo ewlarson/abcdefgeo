@@ -12,6 +12,7 @@ import {
   getDefaultThemeId,
   getAvailableThemes,
   getThemeConfig,
+  hasLocationThemeId,
   isThemeSelectorEnabled,
   isKnownThemeId,
   setActiveThemeId,
@@ -59,6 +60,7 @@ export function ThemeProvider({
   // promote it via setActiveThemeId so cookies stay in sync and subscribers update.
   useEffect(() => {
     if (!hydrated) return;
+    if (hasLocationThemeId()) return;
     const stored =
       typeof window !== 'undefined'
         ? window.localStorage.getItem(THEME_STORAGE_KEY)

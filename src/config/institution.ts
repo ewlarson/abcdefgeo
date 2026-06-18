@@ -685,7 +685,8 @@ export function getThemeSupportedLocales(themeId: ThemeId): string[] {
 }
 
 export function getThemeRouteMode(themeId: ThemeId): RouteMode {
-  return getThemeConfig(themeId).site?.routing?.mode || 'browser';
+  void themeId;
+  return 'hash';
 }
 
 export function getThemeCanonicalUrl(themeId: ThemeId): string | undefined {
@@ -710,6 +711,10 @@ export function getThemeIconPack(themeId: ThemeId): ThemeIconPack {
 }
 
 function getThemeIdFromLocation(): ThemeId | null {
+  return getThemeIdFromUrlSearch() || getThemeIdFromPathname();
+}
+
+function getThemeIdFromUrlSearch(): ThemeId | null {
   try {
     if (typeof window === 'undefined') return null;
     const params = new URLSearchParams(window.location.search);
@@ -720,11 +725,48 @@ function getThemeIdFromLocation(): ThemeId | null {
   }
 }
 
+function normalizeBasePath(value: string | undefined): string {
+  if (!value || value === '/') return '/';
+  const withLeadingSlash = value.startsWith('/') ? value : `/${value}`;
+  return withLeadingSlash.endsWith('/')
+    ? withLeadingSlash
+    : `${withLeadingSlash}/`;
+}
+
+function getThemeIdFromPathname(): ThemeId | null {
+  try {
+    if (typeof window === 'undefined') return null;
+
+    const basePath = normalizeBasePath(import.meta.env.BASE_URL || '/');
+    const baseWithoutTrailingSlash = basePath.replace(/\/$/, '');
+    let pathname = window.location.pathname;
+
+    if (basePath !== '/') {
+      if (pathname === baseWithoutTrailingSlash) {
+        pathname = '/';
+      } else if (pathname.startsWith(basePath)) {
+        pathname = `/${pathname.slice(basePath.length)}`;
+      }
+    }
+
+    const requested = pathname.replace(/^\/+/, '').split('/')[0];
+    return isKnownThemeId(requested) ? requested : null;
+  } catch {
+    return null;
+  }
+}
+
+export function hasLocationThemeId(): boolean {
+  return Boolean(getThemeIdFromLocation());
+}
+
 export function getActiveThemeId(): ThemeId {
   const urlTheme = getThemeIdFromLocation();
   if (urlTheme) {
-    safeWriteLocalStorage(THEME_STORAGE_KEY, urlTheme);
-    safeWriteCookie(THEME_COOKIE_KEY, urlTheme);
+    if (urlTheme === getThemeIdFromUrlSearch()) {
+      safeWriteLocalStorage(THEME_STORAGE_KEY, urlTheme);
+      safeWriteCookie(THEME_COOKIE_KEY, urlTheme);
+    }
     return urlTheme;
   }
 

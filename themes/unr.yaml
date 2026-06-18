@@ -13,7 +13,7 @@ site:
   show_locale_selector: false
   show_theme_selector: false
   routing:
-    mode: browser
+    mode: hash
   icons:
     manifest: /theme-icons/unr/manifest.webmanifest
     favicon: /theme-icons/unr/favicon.ico

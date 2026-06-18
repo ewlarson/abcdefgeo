@@ -9,7 +9,7 @@ site:
     - en
   show_theme_selector: true
   routing:
-    mode: browser
+    mode: hash
   icons:
     manifest: /theme-icons/nyu/manifest.webmanifest
     favicon: /theme-icons/nyu/nyu-favicon.ico

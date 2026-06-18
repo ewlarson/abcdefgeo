@@ -1,10 +1,10 @@
 {
-  "id": "../../?ogm_theme=opengeometadata",
+  "id": "../../opengeometadata/",
   "name": "OpenGeoMetadata Geoportal",
   "short_name": "OpenGeoMetadata",
   "description": "A configurable geospatial discovery site for a fictitious OpenGeoMetadata institution.",
-  "start_url": "../../?ogm_theme=opengeometadata",
-  "scope": "../../",
+  "start_url": "../../opengeometadata/#/",
+  "scope": "../../opengeometadata/",
   "display": "standalone",
   "theme_color": "#111111",
   "background_color": "#F6F0D8",

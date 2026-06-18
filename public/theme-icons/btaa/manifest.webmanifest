@@ -1,10 +1,10 @@
 {
-  "id": "../../?ogm_theme=btaa",
+  "id": "../../btaa/",
   "name": "BTAA Geoportal",
   "short_name": "BTAA Geoportal",
   "description": "Search geospatial resources from the Big Ten Academic Alliance and the OpenGeoMetadata community.",
-  "start_url": "../../?ogm_theme=btaa",
-  "scope": "../../",
+  "start_url": "../../btaa/#/",
+  "scope": "../../btaa/",
   "display": "standalone",
   "theme_color": "#003C5B",
   "background_color": "#003C5B",
