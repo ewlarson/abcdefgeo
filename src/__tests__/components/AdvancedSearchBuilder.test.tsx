@@ -5,6 +5,7 @@ import { axeWithWCAG22 } from '../../test-utils/axe';
 import { MemoryRouter } from 'react-router';
 import userEvent from '@testing-library/user-event';
 import { AdvancedSearchBuilder } from '../../components/search/AdvancedSearchBuilder';
+import { fetchFacetValues } from '../../services/api';
 
 describe('AdvancedSearchBuilder', () => {
   const renderBuilder = (
@@ -67,6 +68,7 @@ describe('AdvancedSearchBuilder', () => {
       { value: 'dct_accessRights_s', label: 'Access Rights' },
       { value: 'dct_creator_sm', label: 'Creator' },
       { value: 'dct_description_sm', label: 'Description' },
+      { value: 'b1g_language_sm', label: 'Language' },
       {
         value: 'b1g_localCollectionLabel_sm',
         label: 'Local Collection',
@@ -99,6 +101,59 @@ describe('AdvancedSearchBuilder', () => {
     expect(onApply).toHaveBeenCalledWith([
       { op: 'AND', field: 'dct_description_sm', q: 'Water' },
     ]);
+  });
+
+  it('loads and selects facet suggestions for facetable fields', async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetchFacetValues).mockResolvedValueOnce({
+      data: [
+        {
+          id: 'minnesota',
+          type: 'facet_value',
+          attributes: {
+            label: 'Minnesota',
+            value: 'Minnesota',
+            hits: 12,
+          },
+        },
+        {
+          id: 'wisconsin',
+          type: 'facet_value',
+          attributes: {
+            label: 'Wisconsin',
+            value: 'Wisconsin',
+            hits: 1,
+          },
+        },
+      ],
+      meta: {
+        totalCount: 2,
+        totalPages: 1,
+        currentPage: 1,
+        perPage: 20,
+      },
+    });
+    renderBuilder();
+
+    await user.selectOptions(screen.getByLabelText('Field'), 'dct_spatial_sm');
+    const valueInput = screen.getByLabelText('Value') as HTMLInputElement;
+    await user.click(valueInput);
+
+    expect(await screen.findByText('Minnesota')).toBeInTheDocument();
+    expect(screen.getByText('12 results')).toBeInTheDocument();
+    expect(screen.getByText('1 result')).toBeInTheDocument();
+    expect(fetchFacetValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        facetName: 'dct_spatial_sm',
+        perPage: 20,
+        sort: 'count_desc',
+      })
+    );
+
+    await user.keyboard('{ArrowDown}{Enter}');
+
+    expect(valueInput).toHaveValue('Minnesota');
+    expect(screen.queryByText('Wisconsin')).not.toBeInTheDocument();
   });
 
   it('calls onApply with empty array when no value entered', () => {

@@ -7,6 +7,8 @@ import { isValidGeoJsonForLeaflet } from '../../utils/geometryUtils';
 import { useSearchParams } from 'react-router';
 import { attachBasemapSwitcher } from '../../config/basemaps';
 import { debugLog } from '../../utils/logger';
+import { leafletGestureMapOptions } from '../../config/leafletConfig';
+import { registerLeafletGestureHandling } from '../../config/leafletGestureHandling';
 
 interface MapViewProps {
   results: GeoDocument[];
@@ -84,10 +86,11 @@ export function MapView({ results }: MapViewProps) {
         const L = await loadLeaflet();
         if (!mapContainer.current) return;
         if (mapRef.current) return;
-        mapRef.current = L.map(mapContainer.current).setView(
-          [39.8283, -98.5795],
-          3
-        );
+        registerLeafletGestureHandling(L);
+        mapRef.current = L.map(
+          mapContainer.current,
+          leafletGestureMapOptions
+        ).setView([39.8283, -98.5795], 3);
         basemapCleanupRef.current = attachBasemapSwitcher(mapRef.current, L);
         debugLog('✅ Map initialized');
       })();

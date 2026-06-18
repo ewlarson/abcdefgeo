@@ -7,6 +7,9 @@ import { fetchMapH3 } from '../../services/api';
 import { HexLayerToggleControl } from '../map/HexLayerToggleControl';
 import { MapGeosearchControl } from '../map/MapGeosearchControl';
 import { attachBasemapSwitcher } from '../../config/basemaps';
+import { leafletGestureMapOptions } from '../../config/leafletConfig';
+import { registerLeafletGestureHandling } from '../../config/leafletGestureHandling';
+import { normalizeBboxSearchEnvelope } from '../../utils/bbox';
 import {
   getSavedHexLayerEnabled,
   saveHexLayerEnabled,
@@ -82,6 +85,34 @@ interface BBox {
 
 type BBoxRelationMode = 'intersects' | 'within';
 
+function getBBoxFromSearchParams(searchParams: URLSearchParams): BBox | null {
+  const type = searchParams.get('include_filters[geo][type]');
+  if (type !== 'bbox') return null;
+
+  const topLeftLat = searchParams.get('include_filters[geo][top_left][lat]');
+  const topLeftLon = searchParams.get('include_filters[geo][top_left][lon]');
+  const bottomRightLat = searchParams.get(
+    'include_filters[geo][bottom_right][lat]'
+  );
+  const bottomRightLon = searchParams.get(
+    'include_filters[geo][bottom_right][lon]'
+  );
+
+  if (topLeftLat && topLeftLon && bottomRightLat && bottomRightLon) {
+    return {
+      topLeft: {
+        lat: Number.parseFloat(topLeftLat),
+        lon: Number.parseFloat(topLeftLon),
+      },
+      bottomRight: {
+        lat: Number.parseFloat(bottomRightLat),
+        lon: Number.parseFloat(bottomRightLon),
+      },
+    };
+  }
+  return null;
+}
+
 interface GeospatialFilterMapProps {
   /** When true, hide the "Location" heading and Clear button (e.g. when used inside LocationFacetCollapsible). */
   hideHeading?: boolean;
@@ -94,6 +125,7 @@ export function GeospatialFilterMap({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const searchParamsRef = useRef(searchParams);
   const isUpdatingFromParamsRef = useRef(false);
   const selectedPlaceGeoJsonRef = useRef<L.GeoJSON | null>(null);
   const bboxRectangleRef = useRef<L.Rectangle | null>(null);
@@ -111,6 +143,10 @@ export function GeospatialFilterMap({
     getSavedHexLayerEnabled
   );
 
+  useEffect(() => {
+    searchParamsRef.current = searchParams;
+  }, [searchParams]);
+
   const getRelationFromParams = useCallback((): BBoxRelationMode => {
     const relation = searchParams.get('include_filters[geo][relation]');
     if (relation === 'within') return 'within';
@@ -118,49 +154,28 @@ export function GeospatialFilterMap({
   }, [searchParams]);
 
   // Parse bbox from URL params
-  const getBBoxFromParams = useCallback((): BBox | null => {
-    const type = searchParams.get('include_filters[geo][type]');
-    if (type !== 'bbox') return null;
-
-    const topLeftLat = searchParams.get('include_filters[geo][top_left][lat]');
-    const topLeftLon = searchParams.get('include_filters[geo][top_left][lon]');
-    const bottomRightLat = searchParams.get(
-      'include_filters[geo][bottom_right][lat]'
-    );
-    const bottomRightLon = searchParams.get(
-      'include_filters[geo][bottom_right][lon]'
-    );
-
-    if (topLeftLat && topLeftLon && bottomRightLat && bottomRightLon) {
-      return {
-        topLeft: {
-          lat: Number.parseFloat(topLeftLat),
-          lon: Number.parseFloat(topLeftLon),
-        },
-        bottomRight: {
-          lat: Number.parseFloat(bottomRightLat),
-          lon: Number.parseFloat(bottomRightLon),
-        },
-      };
-    }
-    return null;
-  }, [searchParams]);
+  const getBBoxFromParams = useCallback(
+    (): BBox | null => getBBoxFromSearchParams(searchParams),
+    [searchParams]
+  );
 
   // Initialize map
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
     if (!mapRef.current) {
+      registerLeafletGestureHandling(L);
       mapRef.current = L.map(mapContainerRef.current, {
         zoomControl: true,
         attributionControl: false,
         minZoom: 1,
+        ...leafletGestureMapOptions,
       });
       setMapInstance(mapRef.current);
       basemapCleanupRef.current = attachBasemapSwitcher(mapRef.current, L);
 
       // Set initial view: if URL has a location bbox, fit to it; otherwise world
-      const initialBbox = getBBoxFromParams();
+      const initialBbox = getBBoxFromSearchParams(searchParamsRef.current);
       if (initialBbox) {
         const bounds = L.latLngBounds(
           [initialBbox.bottomRight.lat, initialBbox.topLeft.lon],
@@ -192,7 +207,7 @@ export function GeospatialFilterMap({
             if (rect.width > 0 && rect.height > 0) {
               mapRef.current.invalidateSize();
               // If we have a bbox in URL, re-fit so bounds are correct after layout
-              const bbox = getBBoxFromParams();
+              const bbox = getBBoxFromSearchParams(searchParamsRef.current);
               if (bbox) {
                 const bounds = L.latLngBounds(
                   [bbox.bottomRight.lat, bbox.topLeft.lon],
@@ -590,7 +605,7 @@ export function GeospatialFilterMap({
         hexLayerRef.current = null;
       }
     };
-  }, [searchParams, hexLayerEnabled]);
+  }, [searchParams, hexLayerEnabled, getBBoxFromParams]);
 
   const handleSearchHere = () => {
     if (!mapRef.current) return;
@@ -607,16 +622,30 @@ export function GeospatialFilterMap({
     // Add new bbox filter from current map bounds
     const ne = bounds.getNorthEast();
     const sw = bounds.getSouthWest();
+    const bbox = normalizeBboxSearchEnvelope(sw.lng, sw.lat, ne.lng, ne.lat);
+    if (!bbox) return;
 
     // Top-left is northwest corner (north = higher lat, west = lower lon)
     // Bottom-right is southeast corner (south = lower lat, east = higher lon)
     newParams.set('include_filters[geo][type]', 'bbox');
     newParams.set('include_filters[geo][field]', 'dcat_bbox');
     newParams.set('include_filters[geo][relation]', relation);
-    newParams.set('include_filters[geo][top_left][lat]', ne.lat.toString());
-    newParams.set('include_filters[geo][top_left][lon]', sw.lng.toString());
-    newParams.set('include_filters[geo][bottom_right][lat]', sw.lat.toString());
-    newParams.set('include_filters[geo][bottom_right][lon]', ne.lng.toString());
+    newParams.set(
+      'include_filters[geo][top_left][lat]',
+      bbox.topLeft.lat.toString()
+    );
+    newParams.set(
+      'include_filters[geo][top_left][lon]',
+      bbox.topLeft.lon.toString()
+    );
+    newParams.set(
+      'include_filters[geo][bottom_right][lat]',
+      bbox.bottomRight.lat.toString()
+    );
+    newParams.set(
+      'include_filters[geo][bottom_right][lon]',
+      bbox.bottomRight.lon.toString()
+    );
 
     // Reset to page 1 when bbox changes
     newParams.delete('page');

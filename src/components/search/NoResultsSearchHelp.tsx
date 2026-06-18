@@ -63,7 +63,7 @@ function buildBaseSearchParams(currentParams: URLSearchParams) {
   const view = currentParams.get('view');
   const perPage = currentParams.get('per_page');
 
-  if (view && view !== 'list') {
+  if (view && view !== 'map') {
     params.set('view', view);
   }
   if (perPage) {
@@ -330,7 +330,9 @@ export function NoResultsSearchHelp({
               attribution={t('search.viaOpenStreetMap')}
             >
               {isLoadingPlaces ? (
-                <EmptySuggestionRow>{t('search.searchingPlaces')}</EmptySuggestionRow>
+                <EmptySuggestionRow>
+                  {t('search.searchingPlaces')}
+                </EmptySuggestionRow>
               ) : placeSuggestions.length > 0 ? (
                 placeSuggestions.map((place) => {
                   const attrs = place.attributes;
@@ -375,7 +377,9 @@ export function NoResultsSearchHelp({
               to={buildKeywordSearchHref(searchParams, trimmedQuery)}
               className="mt-1 flex items-center justify-between border-t border-gray-200 px-4 py-3 text-sm font-medium text-blue-700 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
             >
-              <span>{t('search.seeAllResultsFor', { query: trimmedQuery })}</span>
+              <span>
+                {t('search.seeAllResultsFor', { query: trimmedQuery })}
+              </span>
               <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
             </Link>
           </div>

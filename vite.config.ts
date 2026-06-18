@@ -15,7 +15,7 @@ function githubPagesSpaFallback(): Plugin {
       rootDir = config.root;
       outDir = path.resolve(config.root, config.build.outDir);
     },
-    async closeBundle() {
+    async writeBundle() {
       const indexPath = path.join(outDir, 'index.html');
       await Promise.all(
         ['404.html', '500.html'].map((fileName) =>

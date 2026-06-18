@@ -378,19 +378,17 @@ describe('ResourceViewer', () => {
 
       const iframe = container.querySelector('iframe.viewer');
       expect(iframe).not.toBeNull();
-      expect(iframe?.getAttribute('sandbox')).toBe('allow-scripts');
+      expect(iframe?.getAttribute('sandbox')).toBe(
+        'allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox allow-downloads'
+      );
+      expect(iframe).toHaveAttribute('allow', 'fullscreen');
+      expect(iframe).toHaveAttribute('allowfullscreen');
 
-      const srcDoc = iframe?.getAttribute('srcdoc') || '';
-      expect(srcDoc).toContain('var inlineManifest = {');
-      expect(srcDoc).toContain('URL.createObjectURL');
-      expect(srcDoc).toContain(
-        '"id":"https://example.com/iiif/info.json/manifest"'
-      );
-      expect(srcDoc).toContain(
-        '"id":"https://example.com/iiif/full/full/0/default.jpg"'
-      );
-      expect(srcDoc).toContain('"type":"ImageService2"');
-      expect(srcDoc).not.toContain('blob:http://localhost');
+      const src = iframe?.getAttribute('src') || '';
+      const miradorUrl = new URL(src);
+      expect(miradorUrl.pathname).toBe('/mirador');
+      expect(miradorUrl.searchParams.get('manifest')).toMatch(/^blob:/);
+      expect(iframe).not.toHaveAttribute('srcdoc');
       expect(fetchMock).toHaveBeenCalledWith(
         'https://example.com/iiif/info.json',
         {

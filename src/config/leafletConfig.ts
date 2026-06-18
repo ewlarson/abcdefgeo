@@ -1,6 +1,18 @@
 // src/config/leafletConfig.ts
+import type * as Leaflet from 'leaflet';
+
+export type LeafletGestureMapOptions = Leaflet.MapOptions & {
+  gestureHandling: true;
+  scrollWheelZoom: true;
+};
+
+export const leafletGestureMapOptions: LeafletGestureMapOptions = {
+  gestureHandling: true,
+  scrollWheelZoom: true,
+};
+
 export const leafletViewerOptions = {
-  MAP: {},
+  MAP: leafletGestureMapOptions,
   BOUNDSOVERLAY: {
     INDEX: { color: '#3388ff' },
     SHOW: { color: '#3388ff' },
@@ -8,13 +20,7 @@ export const leafletViewerOptions = {
   },
   SELECTED_COLOR: '#2C7FB8',
   SLEEP: {
-    SLEEP: true,
-    MARGIN_DISTANCE: 100,
-    SLEEPTIME: 750,
-    WAKETIME: 750,
-    HOVERTOWAKE: false,
-    MESSAGE: 'Click to Wake',
-    BACKGROUND: 'rgba(214, 214, 214, .7)',
+    SLEEP: false,
   },
   LAYERS: {
     DETECT_RETINA: true,

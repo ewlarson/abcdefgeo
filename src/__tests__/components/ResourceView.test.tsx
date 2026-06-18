@@ -19,7 +19,10 @@ vi.mock('../../services/api', () => ({
   fetchSearchResults: vi.fn(),
   getApiBasePath: vi.fn(() => 'https://ogm.geo4lib.app/api/v1'),
   ApiError: class ApiError extends Error {
-    constructor(message: string) {
+    constructor(
+      message: string,
+      public status?: number
+    ) {
       super(message);
       this.name = 'ApiError';
     }
@@ -401,7 +404,7 @@ describe('ResourceView Component', () => {
   });
 
   describe('Error State', () => {
-    it('displays error message when API call fails', async () => {
+    it('displays the server error page when API call fails', async () => {
       const errorMessage = 'Resource not found';
       fetchResourceDetails.mockRejectedValue(new Error(errorMessage));
 
@@ -413,16 +416,16 @@ describe('ResourceView Component', () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(
-            'An unexpected error occurred while fetching item details'
-          )
+          screen.getByRole('heading', { name: 'Something went wrong' })
         ).toBeInTheDocument();
       });
+
+      expect(screen.getByText(errorMessage)).toBeInTheDocument();
     });
 
-    it('displays ApiError message when API returns specific error', async () => {
+    it('displays the resource 404 page when the API returns not found', async () => {
       const { ApiError } = await import('../../services/api');
-      const apiError = new ApiError('API Error: Resource not accessible');
+      const apiError = new ApiError('Resource not found', 404);
       fetchResourceDetails.mockRejectedValue(apiError);
 
       render(
@@ -433,14 +436,16 @@ describe('ResourceView Component', () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText('API Error: Resource not accessible')
+          screen.getByRole('heading', { name: 'Resource not found' })
         ).toBeInTheDocument();
       });
+
+      expect(screen.queryByText('Resource not found')).toBeInTheDocument();
     });
   });
 
   describe('No Data State', () => {
-    it('displays debug message when no data is loaded', async () => {
+    it('displays the server error page when no data is loaded', async () => {
       fetchResourceDetails.mockResolvedValue(null);
 
       render(
@@ -450,13 +455,9 @@ describe('ResourceView Component', () => {
       );
 
       await waitFor(() => {
-        // Check for the debug container
-        const debugContainer = document.querySelector(
-          '.bg-yellow-100.border.border-yellow-400'
-        );
-        expect(debugContainer).toBeInTheDocument();
-        expect(debugContainer).toHaveTextContent('Debug:');
-        expect(debugContainer).toHaveTextContent('No data loaded yet');
+        expect(
+          screen.getByRole('heading', { name: 'Something went wrong' })
+        ).toBeInTheDocument();
       });
     });
   });
@@ -1285,18 +1286,11 @@ describe('ResourceView Component', () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(
-            'An unexpected error occurred while fetching item details'
-          )
+          screen.getByRole('heading', { name: 'Something went wrong' })
         ).toBeInTheDocument();
       });
 
-      // Should show error message and not crash
-      expect(
-        screen.getByText(
-          'An unexpected error occurred while fetching item details'
-        )
-      ).toBeInTheDocument();
+      expect(screen.getByText('Network error')).toBeInTheDocument();
     });
   });
 

@@ -315,7 +315,35 @@ describe('fetchFacetValues', () => {
         facetName: 'dct_spatial_sm',
         searchParams,
       })
-    ).rejects.toThrow('HTTP error 404: {"detail":"Not Found"}');
+    ).rejects.toMatchObject({ message: 'Not Found', status: 404 });
+  });
+
+  it('extracts JSON:API error details', async () => {
+    const searchParams = new URLSearchParams();
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+      text: async () =>
+        JSON.stringify({
+          errors: [
+            {
+              status: '404',
+              code: 'not_found',
+              title: 'Not found',
+              detail: 'Resource not found',
+            },
+          ],
+        }),
+    });
+    global.fetch = mockFetch;
+
+    await expect(
+      fetchFacetValues({
+        facetName: 'dct_spatial_sm',
+        searchParams,
+      })
+    ).rejects.toMatchObject({ message: 'Resource not found', status: 404 });
   });
 
   it('handles all sort options', async () => {
@@ -694,7 +722,7 @@ describe('fetchSearchResults', () => {
     const requestUrl = new URL(onApiCall.mock.calls[0][0]);
     expect(requestUrl.searchParams.get('q')).toBe('chicago');
     expect(requestUrl.searchParams.get('page')).toBe('2');
-    expect(requestUrl.searchParams.get('per_page')).toBe('10');
+    expect(requestUrl.searchParams.get('per_page')).toBe('20');
     expect(requestUrl.searchParams.get('sort')).toBe('year_desc');
     expect(requestUrl.searchParams.get('adv_q')).toBe(advQuery);
     expect(

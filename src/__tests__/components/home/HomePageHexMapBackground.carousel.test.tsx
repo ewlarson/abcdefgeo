@@ -2,13 +2,20 @@
  * Behavior tests for the Featured resources carousel on the homepage.
  * Covers: thumbnail selection (no auto-start), Play/Pause, animation from selected item.
  */
-import { render, screen, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  act,
+  fireEvent,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as api from '../../../services/api';
-import { FEATURED_RESOURCE_IDS } from '../../../config/featured';
 import { HomePageHexMapBackground } from '../../../components/home/HomePageHexMapBackground.client';
+import { THEME_STORAGE_KEY } from '../../../config/institution';
+import { ThemeProvider } from '../../../context/ThemeContext';
 
 vi.mock('leaflet/dist/leaflet.css', () => ({}));
 vi.mock('leaflet-gesture-handling', () => ({ GestureHandling: {} }));
@@ -60,6 +67,7 @@ vi.mock('react-leaflet', () => ({
       getNorthEast: () => ({ lat: 50, lng: -80 }),
       getSouthWest: () => ({ lat: 30, lng: -100 }),
     }),
+    getCenter: () => ({ lat: 44.9778, lng: -93.265 }),
     getZoom: () => 5,
     whenReady: (cb: () => void) => cb(),
     on: () => {},
@@ -123,24 +131,32 @@ function makeMockDetail(id: string, title: string) {
   };
 }
 
-const MOCK_DETAILS = FEATURED_RESOURCE_IDS.map((id, i) =>
-  makeMockDetail(id, `Featured Item ${i + 1}`)
-);
-
 describe('HomePageHexMapBackground – Featured carousel behavior', () => {
   const user = userEvent.setup({ delay: null });
+  const previewTitleById = new Map<string, string>();
 
   beforeEach(() => {
     vi.useRealTimers();
     localStorage.clear();
-    vi.mocked(api.fetchFeaturedResourcePreview).mockImplementation((id: string) => {
-      const idx = FEATURED_RESOURCE_IDS.indexOf(id);
-      return Promise.resolve(
-        MOCK_DETAILS[idx >= 0 ? idx : 0] as Awaited<
-          ReturnType<typeof api.fetchFeaturedResourcePreview>
-        >
-      );
-    });
+    localStorage.setItem(THEME_STORAGE_KEY, 'unr');
+    previewTitleById.clear();
+    vi.mocked(api.fetchFeaturedResourcePreview).mockImplementation(
+      (id: string) => {
+        if (!previewTitleById.has(id)) {
+          previewTitleById.set(
+            id,
+            `Featured Item ${previewTitleById.size + 1}`
+          );
+        }
+
+        return Promise.resolve(
+          makeMockDetail(
+            id,
+            previewTitleById.get(id) || 'Featured Item'
+          ) as Awaited<ReturnType<typeof api.fetchFeaturedResourcePreview>>
+        );
+      }
+    );
   });
 
   afterEach(() => {
@@ -150,7 +166,9 @@ describe('HomePageHexMapBackground – Featured carousel behavior', () => {
   const renderCarousel = () => {
     render(
       <BrowserRouter>
-        <HomePageHexMapBackground />
+        <ThemeProvider initialThemeId="unr">
+          <HomePageHexMapBackground />
+        </ThemeProvider>
       </BrowserRouter>
     );
   };
@@ -206,7 +224,8 @@ describe('HomePageHexMapBackground – Featured carousel behavior', () => {
     const thirdThumb = screen.getByRole('button', {
       name: /Featured Item 3/i,
     });
-    await user.click(thirdThumb);
+    vi.useFakeTimers();
+    fireEvent.click(thirdThumb);
 
     expect(screen.getByRole('status', { hidden: true })).toHaveTextContent(
       /Current featured item: Featured Item 3/i
@@ -216,8 +235,7 @@ describe('HomePageHexMapBackground – Featured carousel behavior', () => {
     expect(progressBar).toBeInTheDocument();
     expect(progressBar).toHaveAttribute('aria-valuenow', '100');
 
-    vi.useFakeTimers();
-    await act(async () => {
+    act(() => {
       vi.advanceTimersByTime(2000);
     });
     vi.useRealTimers();

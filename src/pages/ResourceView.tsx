@@ -8,9 +8,9 @@ import {
   ApiError,
 } from '../services/api';
 import type { GeoDocument, GeoDocumentDetails } from '../types/api';
-import { ErrorMessage } from '../components/ErrorMessage';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
+import { StatusErrorPage } from './StatusErrorPage';
 import { useApi } from '../context/ApiContext';
 import { ResourceViewer } from '../components/resource/ResourceViewer';
 import { ResourceBreadcrumbs } from '../components/resource/ResourceBreadcrumbs';
@@ -47,6 +47,11 @@ interface SearchState {
   view?: 'list' | 'gallery' | 'map';
 }
 
+interface ResourceErrorState {
+  message?: string;
+  status?: number;
+}
+
 const SIMILAR_ITEM_ID_SEPARATOR = '\u001f';
 
 // Define the ResourceData type to match the actual API response
@@ -70,7 +75,17 @@ interface ResourceData extends GeoDocument {
       citation?: string;
       thumbnail_url?: string;
       static_map?: string;
-      links?: Record<string, Array<{ label: string; url: string }>>;
+      links?: Record<
+        string,
+        Array<{
+          label: string;
+          url: string;
+          format?: 'iso' | 'fgdc' | 'html';
+          wxs_identifier?: string;
+          request_url?: string;
+          request_label?: string;
+        }>
+      >;
       relationships?: Record<string, unknown>;
       similar_items?: Array<{
         id: string;
@@ -169,7 +184,8 @@ export function ResourceView({
     if (prefetchedResource && id && prefetchedResource.id === id) return false;
     return true;
   });
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ResourceErrorState | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
   const [isDataDictionaryModalOpen, setIsDataDictionaryModalOpen] =
     useState(false);
   const [scopedSimilarItems, setScopedSimilarItems] = useState<
@@ -396,11 +412,14 @@ export function ResourceView({
         }
       } catch (err) {
         if (isMounted) {
-          const message =
+          setError(
             err instanceof ApiError
-              ? err.message
-              : 'An unexpected error occurred while fetching item details';
-          setError(message);
+              ? { message: err.message, status: err.status }
+              : {
+                  message: err instanceof Error ? err.message : undefined,
+                  status: 500,
+                }
+          );
           setIsLoading(false);
         }
       }
@@ -411,7 +430,7 @@ export function ResourceView({
     return () => {
       isMounted = false;
     };
-  }, [id, prefetchedResource]); // eslint-disable-line react-hooks/exhaustive-deps -- setLastApiUrl is stable and intentionally excluded
+  }, [id, prefetchedResource, retryNonce]); // eslint-disable-line react-hooks/exhaustive-deps -- setLastApiUrl is stable and intentionally excluded
 
   useEffect(() => {
     if (!data?.id) return;
@@ -517,24 +536,31 @@ export function ResourceView({
   }
 
   if (error) {
-    return <ErrorMessage message={error} />;
+    const isNotFound = error.status === 404;
+
+    return (
+      <StatusErrorPage
+        kind={isNotFound ? 'resourceNotFound' : 'serverError'}
+        statusCode={isNotFound ? 404 : error.status || 500}
+        resourceId={id}
+        details={isNotFound ? undefined : error.message}
+        backTo={isMounted ? searchState?.searchUrl : undefined}
+        onRetry={
+          isNotFound ? undefined : () => setRetryNonce((current) => current + 1)
+        }
+      />
+    );
   }
 
-  // Debug: Show loading state and data status
   if (!data) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 bg-gray-50 pt-4 pb-8">
-          <div className="w-full px-4 sm:px-6 lg:px-8">
-            <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
-              <strong>Debug:</strong> No data loaded yet. Loading:{' '}
-              {isLoading.toString()}, Error: {error || 'none'}
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
+      <StatusErrorPage
+        kind="serverError"
+        statusCode={500}
+        resourceId={id}
+        backTo={isMounted ? searchState?.searchUrl : undefined}
+        onRetry={() => setRetryNonce((current) => current + 1)}
+      />
     );
   }
 

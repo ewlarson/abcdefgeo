@@ -8,17 +8,54 @@ import {
 } from '../types/api';
 import { AdvancedClause, FacetFilter } from '../types/search';
 import { getActiveThemeConfig } from '../config/institution';
+import { SEARCH_RESULTS_PER_PAGE } from '../constants/search';
 import { debugLog, isDebugLoggingEnabled } from '../utils/logger';
-import { getTurnstileSessionToken, isTurnstileConfigured } from './turnstile';
+import {
+  getTurnstileSessionToken,
+  isTurnstileConfigured,
+  isTurnstileRequiredResponse,
+  signalTurnstileRequired,
+} from './turnstile';
 
 export class ApiError extends Error {
   constructor(
     message: string,
-    public status?: number
+    public status?: number,
+    public code?: string
   ) {
     super(message);
     this.name = 'ApiError';
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function readString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+function extractApiErrorMessage(payload: unknown): string | undefined {
+  if (!isRecord(payload)) return undefined;
+
+  const errors = payload.errors;
+  if (Array.isArray(errors)) {
+    const firstError = errors.find(isRecord);
+    if (firstError) {
+      return (
+        readString(firstError.detail) ||
+        readString(firstError.title) ||
+        readString(firstError.code)
+      );
+    }
+  }
+
+  return (
+    readString(payload.detail) ||
+    readString(payload.message) ||
+    readString(payload.error)
+  );
 }
 
 /**
@@ -341,6 +378,45 @@ interface FetchOptions {
   useJsonp?: boolean;
 }
 
+function parseApiErrorPayload(errorText: string): {
+  message?: string;
+  code?: string;
+} {
+  if (!errorText) return {};
+
+  try {
+    const payload = JSON.parse(errorText) as unknown;
+    const payloadRecord = isRecord(payload) ? payload : {};
+    const code =
+      readString(payloadRecord.error) || readString(payloadRecord.code);
+    const errors = Array.isArray(payloadRecord.errors)
+      ? payloadRecord.errors
+      : [];
+    const firstError = errors.find(
+      (item): item is Record<string, unknown> =>
+        item !== null && typeof item === 'object'
+    );
+    const firstErrorCode =
+      firstError && readString(firstError.code)
+        ? readString(firstError.code)
+        : undefined;
+
+    return {
+      message: extractApiErrorMessage(payload),
+      code: code || firstErrorCode,
+    };
+  } catch {
+    return {};
+  }
+}
+
+function formatHttpErrorMessage(response: Response, errorText: string): string {
+  const statusText = response.statusText ? ` ${response.statusText}` : '';
+  return errorText
+    ? `HTTP error ${response.status}${statusText}: ${errorText}`
+    : `HTTP error ${response.status}${statusText}`;
+}
+
 async function unifiedFetch<T>(
   url: string,
   options: FetchOptions = defaultFetchOptions
@@ -395,19 +471,26 @@ async function unifiedFetch<T>(
       if (!response.ok) {
         const errorText = await response.text();
         console.error('API Error response:', errorText);
-        try {
-          const errorJson = JSON.parse(errorText);
+        const parsedError = parseApiErrorPayload(errorText);
+
+        if (isTurnstileRequiredResponse(response, errorText)) {
+          signalTurnstileRequired({
+            responseStatus: response.status,
+            url: fetchUrl,
+          });
           throw new ApiError(
-            errorJson.detail || 'API request failed',
-            response.status
-          );
-        } catch (e) {
-          console.error('Error parsing API error response:', e);
-          throw new ApiError(
-            `HTTP error ${response.status}: ${errorText}`,
-            response.status
+            parsedError.message ||
+              'Browser verification is required before continuing.',
+            response.status,
+            parsedError.code || 'turnstile_required'
           );
         }
+
+        throw new ApiError(
+          parsedError.message || formatHttpErrorMessage(response, errorText),
+          response.status,
+          parsedError.code
+        );
       }
 
       const jsonData = await response.json();
@@ -464,7 +547,7 @@ async function unifiedFetch<T>(
 export async function fetchSearchResults(
   query: string,
   page: number = 1,
-  perPage: number = 10,
+  perPage: number = SEARCH_RESULTS_PER_PAGE,
   facets: FacetFilter[] = [],
   onApiCall?: (url: string) => void,
   sort?: string,
@@ -474,10 +557,12 @@ export async function fetchSearchResults(
   sourceSearchParams?: URLSearchParams
 ): Promise<JsonApiResponse> {
   const startTime = performance.now();
+  const resultPerPage = SEARCH_RESULTS_PER_PAGE;
   debugLog('🌐 fetchSearchResults called with:', {
     query,
     page,
-    perPage,
+    perPage: resultPerPage,
+    requestedPerPage: perPage,
     facets: facets.length,
     sort,
     advancedClauses: advancedQuery.length,
@@ -493,7 +578,7 @@ export async function fetchSearchResults(
   url.searchParams.set('search_field', effectiveSearchField);
   url.searchParams.set('q', effectiveQuery);
   url.searchParams.set('page', page.toString());
-  url.searchParams.set('per_page', perPage.toString());
+  url.searchParams.set('per_page', resultPerPage.toString());
 
   if (sourceSearchParams) {
     appendForwardedSearchFilters(url.searchParams, sourceSearchParams);
@@ -559,11 +644,12 @@ export async function fetchSearchResults(
     access_rights_agg: 'dct_accessRights_s',
     access_agg: 'dct_accessRights_s',
     index_year_agg: 'gbl_indexyear_im',
-    language_agg: 'dct_language_sm',
+    language_agg: 'b1g_language_sm',
     subject_agg: 'dct_subject_sm',
     institution_agg: 'schema_provider_s',
     format_agg: 'dct_format_s',
     georeferenced_agg: 'gbl_georeferenced_b',
+    map_overlay_agg: 'b1g_georeferenced_allmaps_b',
     id_agg: 'id',
   };
 

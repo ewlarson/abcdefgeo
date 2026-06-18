@@ -9,6 +9,7 @@ import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
 import type { AdvancedClause, FacetFilter } from '../types/search';
 import { FacetList } from '../components/FacetList';
+import { SlidersHorizontal, X } from 'lucide-react';
 // import { MapView } from '../components/search/MapView';
 import { MapProvider, useMap } from '../context/MapContext';
 import { SortControl } from '../components/search/SortControl';
@@ -24,12 +25,8 @@ import {
   normalizeFacetValueForUrl,
 } from '../utils/searchParams';
 import { formatCount } from '../utils/formatNumber';
-import type { JsonApiResponse, GeoDocument } from '../types/api';
+import type { JsonApiResponse } from '../types/api';
 import { useState, useEffect, useRef } from 'react';
-import {
-  consumeGalleryStateRestoreRequest,
-  GALLERY_STATE_STORAGE_KEY,
-} from '../utils/galleryState';
 import {
   generateAnalyticsId,
   scheduleAnalyticsBatch,
@@ -38,40 +35,14 @@ import {
 import { fetchSearchResults } from '../services/api';
 import { useApi } from '../context/ApiContext';
 import { useI18n } from '../hooks/useI18n';
+import { SEARCH_RESULTS_PER_PAGE } from '../constants/search';
+import { buildSearchPageTitle } from '../utils/searchPageTitle';
 
-const isQuotaExceededError = (error: unknown): boolean => {
-  if (error instanceof DOMException) {
-    return (
-      error.name === 'QuotaExceededError' ||
-      error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
-    );
-  }
-  return false;
-};
+const DEFAULT_VIEW: ViewMode = 'map';
 
-const persistGalleryState = (state: {
-  context: string;
-  results: GeoDocument[];
-  startPage: number;
-}) => {
-  try {
-    sessionStorage.setItem(GALLERY_STATE_STORAGE_KEY, JSON.stringify(state));
-  } catch (error) {
-    if (isQuotaExceededError(error)) {
-      // Avoid crashing the page when gallery payload exceeds browser storage quota.
-      try {
-        sessionStorage.removeItem(GALLERY_STATE_STORAGE_KEY);
-      } catch {
-        // ignore cleanup errors
-      }
-      console.warn(
-        'Gallery state cache exceeded session storage quota; skipping persistence.'
-      );
-      return;
-    }
-    throw error;
-  }
-};
+function isViewMode(value: string | null): value is ViewMode {
+  return value === 'map' || value === 'list' || value === 'gallery';
+}
 
 type SearchPageProps = {
   // Loader-provided results (SSR/server-side).
@@ -98,6 +69,9 @@ function SearchContent({
     useState<JsonApiResponse | null>(null);
   const [clientLoading, setClientLoading] = useState(false);
   const [clientError, setClientError] = useState<string | null>(null);
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
+  const [hasOpenedFilterDrawer, setHasOpenedFilterDrawer] = useState(false);
+  const [isDesktopViewport, setIsDesktopViewport] = useState(false);
 
   // Ensure ?q= is present if no params are set to trigger default search
   useEffect(() => {
@@ -115,21 +89,17 @@ function SearchContent({
   } = parseSearchParams(searchParams);
   const sort = searchParams.get('sort') || 'relevance';
   const searchField = searchParams.get('search_field') || 'all_fields';
-  const currentView = (searchParams.get('view') as ViewMode) || 'list';
+  const viewParam = searchParams.get('view');
+  const currentView = isViewMode(viewParam) ? viewParam : DEFAULT_VIEW;
   const normalizedQuery = query || '';
+  const searchPageTitle = buildSearchPageTitle(searchParams);
   const serializedSearchParams = searchParams.toString();
   const searchResults = hasLoaderData
     ? (loaderSearchResults ?? null)
     : clientSearchResults;
   const isLoading = hasLoaderData ? (loaderIsLoading ?? false) : clientLoading;
 
-  const perPageParam = searchParams.get('per_page');
-  const perPage =
-    currentView === 'gallery'
-      ? 20
-      : perPageParam
-        ? parseInt(perPageParam)
-        : searchResults?.meta?.perPage || 10;
+  const perPage = SEARCH_RESULTS_PER_PAGE;
   const searchTotalResults = searchResults?.meta?.totalCount || 0;
   const totalPages = Math.ceil(searchTotalResults / perPage);
   const hasNoSearchResults =
@@ -144,23 +114,85 @@ function SearchContent({
     next.set('showAdvanced', 'true');
     return `/search?${next.toString()}`;
   }, [searchParams, normalizedQuery]);
+  const activeFilterCount = React.useMemo(() => {
+    const activeFacetKeys = new Set(
+      searchFacets.map((facet) =>
+        facet.field === 'year_range'
+          ? 'year_range'
+          : `${facet.field}\0${facet.value}`
+      )
+    );
+    const activeExcludeKeys = new Set(
+      searchExcludeFacets.map((facet) => `${facet.field}\0${facet.value}`)
+    );
+    const hasGeoFilter =
+      searchParams.get('include_filters[geo][type]') === 'bbox';
+
+    return (
+      activeFacetKeys.size +
+      activeExcludeKeys.size +
+      advancedQuery.length +
+      (hasGeoFilter ? 1 : 0)
+    );
+  }, [advancedQuery.length, searchFacets, searchExcludeFacets, searchParams]);
+  const shouldRenderFilterContent =
+    isDesktopViewport || isFilterDrawerOpen || hasOpenedFilterDrawer;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (typeof window.matchMedia !== 'function') {
+      setIsDesktopViewport(true);
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(min-width: 1024px)');
+    const syncDesktopViewport = () => {
+      setIsDesktopViewport(mediaQuery.matches);
+    };
+
+    syncDesktopViewport();
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', syncDesktopViewport);
+      return () => {
+        mediaQuery.removeEventListener('change', syncDesktopViewport);
+      };
+    }
+
+    mediaQuery.addListener(syncDesktopViewport);
+    return () => {
+      mediaQuery.removeListener(syncDesktopViewport);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isFilterDrawerOpen || typeof document === 'undefined') return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isFilterDrawerOpen]);
+
+  useEffect(() => {
+    if (!isFilterDrawerOpen || typeof window === 'undefined') return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsFilterDrawerOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFilterDrawerOpen]);
 
   // For now, treat API errors as “no results” and let ErrorMessage show when needed.
   const resultError = (searchResults as SearchResultErrorPayload | null)?.error;
   const error = clientError || (resultError ? String(resultError) : null);
 
-  // Infinite Scroll State for Gallery View
-  // Initialize with server data to prevent hydration mismatch
-  const [accumulatedResults, setAccumulatedResults] = useState<GeoDocument[]>(
-    searchResults?.data || []
-  );
-
-  // Track the starting page of the accumulated results (for deep links)
-  // Track the starting page of the accumulated results (for deep links)
-  const [accumulatedStartPage, setAccumulatedStartPage] =
-    useState<number>(page);
-
-  // Helper to get stable context string (excluding page and per_page for gallery consistency)
+  // Helper to get stable context string (excluding page and per_page for analytics consistency)
   const getSearchContext = (params: URLSearchParams) => {
     const keys = Array.from(params.keys())
       .filter((k) => k !== 'page' && k !== 'per_page')
@@ -171,13 +203,9 @@ function SearchContent({
   };
 
   const currentContext = getSearchContext(searchParams);
-  const prevContextRef = useRef(currentContext); // Initialize with current
   const searchContextRef = useRef(currentContext);
   const trackedAnalyticsKeysRef = useRef<Set<string>>(new Set());
   const [searchId, setSearchId] = useState(() => generateAnalyticsId('search'));
-
-  // Track if restoration has been attempted
-  const [hasRestored, setHasRestored] = useState(false);
 
   useEffect(() => {
     if (searchContextRef.current === currentContext) return;
@@ -185,121 +213,6 @@ function SearchContent({
     trackedAnalyticsKeysRef.current = new Set();
     setSearchId(generateAnalyticsId('search'));
   }, [currentContext]);
-
-  // Restore state from session storage on mount (Client-side only)
-  useEffect(() => {
-    const shouldRestore =
-      currentView === 'gallery' && consumeGalleryStateRestoreRequest();
-
-    if (!shouldRestore) {
-      setHasRestored(true);
-      return;
-    }
-
-    try {
-      const cached = sessionStorage.getItem(GALLERY_STATE_STORAGE_KEY);
-      if (cached) {
-        const { context, results, startPage } = JSON.parse(cached);
-
-        if (context === currentContext) {
-          setAccumulatedResults(results);
-          if (startPage) setAccumulatedStartPage(startPage);
-        }
-      }
-    } catch (e) {
-      console.warn('Failed to restore gallery state:', e);
-    } finally {
-      setHasRestored(true);
-    }
-  }, []); // Run once on mount
-
-  // Persist state to session storage
-  useEffect(() => {
-    // Only persist if we have finished checking for a restore (hasRestored is true)
-    if (
-      hasRestored &&
-      currentView === 'gallery' &&
-      accumulatedResults.length > 0
-    ) {
-      const state = {
-        context: currentContext,
-        results: accumulatedResults,
-        startPage: accumulatedStartPage,
-      };
-      persistGalleryState(state);
-    }
-  }, [
-    accumulatedResults,
-    accumulatedStartPage,
-    currentContext,
-    currentView,
-    hasRestored,
-  ]);
-
-  // Effect to manage accumulated results
-  useEffect(() => {
-    if (!hasRestored) return;
-
-    const prevContext = prevContextRef.current;
-
-    // If context changed (query, filters, view, sort) OR view is not gallery
-    // We strictly compare the stable context string.
-    if (currentContext !== prevContext || currentView !== 'gallery') {
-      // Context changed: Reset everything
-      setAccumulatedResults(searchResults?.data || []);
-      setAccumulatedStartPage(page);
-      // Clear cache for new context (optional, but good for cleanup)
-      sessionStorage.removeItem(GALLERY_STATE_STORAGE_KEY);
-    } else {
-      // Context is SAME. Check page.
-      if (page === 1) {
-        // If page is 1, we USUALLY reset, but check if we have more cached data
-        // If we have cached data covering page 1, we might want to keep it?
-        // Actually, explicit page 1 navigation usually implies "Start Over".
-        // BUT, if we just came back from ResourceView (via Back button), we might be at page 1.
-
-        // HOWEVER, logic: If user hits Reload at Page 1, we fetch Page 1.
-        // If accumulatedResults has 60 items (P1-P3), and we are at P1.
-        // We probably want to keep the 60 items so scroll position is reliable?
-        // But if user performs a NEW search that results in Page 1... context would change.
-
-        // So: If Context is SAME, and Page is 1.
-        // If we already have results starting at 1, and length > 20, keep them?
-        if (
-          accumulatedResults.length > (searchResults?.data?.length || 0) &&
-          accumulatedStartPage === 1
-        ) {
-          // Do nothing, keep accumulated results
-        } else {
-          setAccumulatedResults(searchResults?.data || []);
-          setAccumulatedStartPage(1);
-        }
-      } else {
-        // Page > 1 and Same Context -> Append
-        if (searchResults?.data && searchResults.data.length > 0) {
-          setAccumulatedResults((prev) => {
-            const existingIds = new Set(prev.map((r) => r.id));
-            const newItems = (searchResults?.data || []).filter(
-              (r) => !existingIds.has(r.id)
-            );
-            if (newItems.length === 0) return prev;
-            return [...prev, ...newItems];
-          });
-          // Preserve accumulatedStartPage (it remains whatever it was: 1, or startPage of deep link)
-        }
-      }
-    }
-
-    prevContextRef.current = currentContext;
-  }, [
-    searchResults,
-    currentContext,
-    page,
-    currentView,
-    accumulatedResults.length,
-    accumulatedStartPage,
-    hasRestored,
-  ]);
 
   const hasAnySearchCriteria =
     searchParams.has('q') ||
@@ -349,7 +262,9 @@ function SearchContent({
         if (cancelled) return;
         console.error('Client-side search fetch failed:', nextError);
         setClientError(
-          nextError instanceof Error ? nextError.message : 'Search request failed'
+          nextError instanceof Error
+            ? nextError.message
+            : 'Search request failed'
         );
         setClientSearchResults(null);
       })
@@ -384,21 +299,27 @@ function SearchContent({
     const savedView = localStorage.getItem(
       'b1g_view_preference'
     ) as ViewMode | null;
-    if (!savedView) return;
+    if (!isViewMode(savedView)) return;
 
     const next = new URLSearchParams(searchParams);
-
-    if (savedView === 'gallery' || savedView === 'map') {
-      next.set('view', savedView);
-      if (savedView === 'gallery') next.set('per_page', '20');
-      else next.delete('per_page');
-      setSearchParams(next, { replace: true });
-      return;
+    if (Array.from(next.keys()).length === 0) {
+      next.set('q', '');
     }
 
-    // savedView === 'list' should behave as explicit default.
-    if (next.has('per_page')) {
-      next.delete('per_page');
+    if (savedView !== DEFAULT_VIEW) {
+      next.set('view', savedView);
+    } else {
+      next.delete('view');
+    }
+
+    if (
+      next.has('per_page') &&
+      next.get('per_page') !== String(SEARCH_RESULTS_PER_PAGE)
+    ) {
+      next.set('per_page', String(SEARCH_RESULTS_PER_PAGE));
+    }
+
+    if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
   }, [searchParams, setSearchParams]);
@@ -444,30 +365,18 @@ function SearchContent({
       // Save preference
       localStorage.setItem('b1g_view_preference', view);
 
-      if (view !== 'list') {
+      if (view !== DEFAULT_VIEW) {
         newParams.set('view', view);
-        // Set per_page=20 for gallery view
-        if (view === 'gallery') {
-          newParams.set('per_page', '20');
-        } else {
-          // For map view, arguably we also want 20? But user specifically said "The 'Gallery' view...".
-          // Let's stick to default for map unless requested.
-          newParams.delete('per_page');
-        }
       } else {
         newParams.delete('view');
-        newParams.delete('per_page');
       }
-    } else {
-      // If updating other params but staying on gallery, ensure per_page=20 is preserved?
-      // Actually URL params persist, so we don't need to re-set it unless we are blindly recreating/clearing params.
-      // But updateSearch generally modifies existing searchParams (init'd from hook).
-      // However, if we enter gallery via view change, we set it.
+      newParams.set('per_page', String(SEARCH_RESULTS_PER_PAGE));
     }
 
     if (perPage !== undefined) {
-      if (perPage !== 10) newParams.set('per_page', perPage.toString());
-      else newParams.delete('per_page');
+      newParams.set('per_page', String(SEARCH_RESULTS_PER_PAGE));
+    } else if (newParams.has('per_page')) {
+      newParams.set('per_page', String(SEARCH_RESULTS_PER_PAGE));
     }
 
     if (facets !== undefined) {
@@ -511,17 +420,11 @@ function SearchContent({
       newParams.delete('page');
     }
 
-    // Prevent scroll reset for infinite scroll in Gallery view
-    const isGallery =
-      view === 'gallery' || (!view && searchParams.get('view') === 'gallery');
-
-    setSearchParams(newParams, {
-      preventScrollReset: isGallery,
-    });
+    setSearchParams(newParams);
   };
 
   const handleViewChange = (newView: ViewMode) => {
-    updateSearch({ view: newView, page: 1 }); // Reset to page 1 to allow fresh infinite scroll start or clean switch
+    updateSearch({ view: newView, page: 1 });
   };
 
   const handlePageChange = (newPage: number) => updateSearch({ page: newPage });
@@ -562,15 +465,9 @@ function SearchContent({
   };
 
   const handleClearAll = () => {
-    const newParams = new URLSearchParams();
-    // Clear all search params including geo filters
-    setSearchParams(newParams);
-    updateSearch({
-      query: '',
-      facets: [],
-      excludeFacets: [],
-      advancedQuery: [],
-    });
+    const next = new URLSearchParams();
+    next.set('q', '');
+    setSearchParams(next);
   };
 
   const handleSortChange = (newSort: string) => {
@@ -694,14 +591,7 @@ function SearchContent({
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Seo
-        title={
-          query
-            ? t('search.resultsFor', { query })
-            : t('search.pageTitle')
-        }
-        description={t('search.pageDescription')}
-      />
+      <Seo title={searchPageTitle} description={t('search.pageDescription')} />
       <Header />
       <main className="flex-1 bg-gray-50 pb-8">
         <h1 className="sr-only">
@@ -763,62 +653,114 @@ function SearchContent({
 
           {/* Two columns: left = Filter Results (heading + map + facets), right = single column with "Showing results" + list/gallery/map */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-8 gap-y-2 mt-4">
-            {/* Left column: filters */}
-            <div className="lg:col-span-3 lg:self-start space-y-4">
-              <h2 className="sr-only text-lg font-semibold text-gray-900">
-                Filter Results
-              </h2>
-              <LocationFacetCollapsible
-                accordion={accordion}
-                setAccordion={setAccordion}
-                showMap={shouldShowLocationFacetMap}
+            {isFilterDrawerOpen && (
+              <button
+                type="button"
+                className="fixed inset-0 z-40 bg-slate-900/40 lg:hidden"
+                aria-label={t('common.close')}
+                onClick={() => setIsFilterDrawerOpen(false)}
               />
-              {searchResults?.included ? (
-                <FacetList
-                  facets={searchResults.included.filter(
-                    (item) => item.type === 'facet' || item.type === 'timeline'
+            )}
+
+            {/* Left column: filters */}
+            <aside
+              id="search-filters-panel"
+              aria-label={t('common.filterResults')}
+              className={`${
+                isFilterDrawerOpen ? 'block' : 'hidden'
+              } fixed inset-y-0 left-0 z-50 w-[min(92vw,24rem)] overflow-y-auto bg-white px-4 py-4 shadow-xl lg:sticky lg:inset-auto lg:top-40 lg:z-10 lg:col-span-3 lg:block lg:w-auto lg:self-start lg:overflow-visible lg:bg-transparent lg:p-0 lg:shadow-none`}
+            >
+              <div className="mb-4 flex items-center justify-between lg:hidden">
+                <h2 className="text-base font-semibold text-gray-900">
+                  {t('common.filterResults')}
+                </h2>
+                <button
+                  type="button"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-700"
+                  aria-label={t('common.close')}
+                  onClick={() => setIsFilterDrawerOpen(false)}
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
+              <h2 className="sr-only text-lg font-semibold text-gray-900">
+                {t('common.filterResults')}
+              </h2>
+              {shouldRenderFilterContent && (
+                <>
+                  <LocationFacetCollapsible
+                    accordion={accordion}
+                    setAccordion={setAccordion}
+                    showMap={shouldShowLocationFacetMap}
+                  />
+                  {searchResults?.included ? (
+                    <FacetList
+                      facets={searchResults.included.filter(
+                        (item) =>
+                          item.type === 'facet' || item.type === 'timeline'
+                      )}
+                      accordion={accordion}
+                      setAccordion={setAccordion}
+                    />
+                  ) : (
+                    <div className="text-gray-500">{t('common.loading')}</div>
                   )}
-                  accordion={accordion}
-                  setAccordion={setAccordion}
-                />
-              ) : (
-                <div className="text-gray-500">Loading facets...</div>
+                </>
               )}
-            </div>
+            </aside>
 
             {/* Right column: "Showing results" header + results list / gallery / map view */}
             <div className="lg:col-span-9 flex flex-col pt-0 mt-0">
               {!hasNoSearchResults && (
-                <div className="mb-2 flex justify-between items-center">
+                <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   {error ? (
-                    <h2 className="text-lg text-gray-600">Results</h2>
+                    <h2 className="text-lg text-gray-600">
+                      {t('search.results')}
+                    </h2>
                   ) : isLoading || shouldShowSearchingPlaceholder ? (
-                    <h2 className="text-lg text-gray-600">Searching…</h2>
+                    <h2 className="text-lg text-gray-600">
+                      {t('search.searching')}
+                    </h2>
                   ) : (
                     <h2 className="text-lg text-gray-600">
-                      Showing results{' '}
+                      {t('search.showingResults')}{' '}
                       {(() => {
-                        let start, end;
-                        if (
-                          currentView === 'gallery' &&
-                          accumulatedResults.length > 0
-                        ) {
-                          start = (accumulatedStartPage - 1) * perPage + 1;
-                          end = start + accumulatedResults.length - 1;
-                        } else {
-                          start = Math.min(
-                            (page - 1) * perPage + 1,
-                            searchTotalResults
-                          );
-                          end = Math.min(page * perPage, searchTotalResults);
-                        }
+                        const start = Math.min(
+                          (page - 1) * perPage + 1,
+                          searchTotalResults
+                        );
+                        const end = Math.min(
+                          page * perPage,
+                          searchTotalResults
+                        );
                         return `${formatCount(start)}-${formatCount(end)}`;
                       })()}{' '}
-                      of {formatCount(searchTotalResults)}
+                      {t('search.of')} {formatCount(searchTotalResults)}
                     </h2>
                   )}
                   {!error && (
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-700 lg:hidden"
+                        aria-controls="search-filters-panel"
+                        aria-expanded={isFilterDrawerOpen}
+                        onClick={() => {
+                          setHasOpenedFilterDrawer(true);
+                          setIsFilterDrawerOpen(true);
+                        }}
+                      >
+                        <SlidersHorizontal
+                          className="h-4 w-4"
+                          aria-hidden="true"
+                        />
+                        <span>{t('common.filterResults')}</span>
+                        {activeFilterCount > 0 && (
+                          <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-blue-700 px-1.5 text-xs font-semibold text-white">
+                            {activeFilterCount}
+                          </span>
+                        )}
+                      </button>
                       <ViewToggle
                         currentView={currentView}
                         onViewChange={handleViewChange}
@@ -863,22 +805,11 @@ function SearchContent({
 
                   {currentView === 'gallery' && (
                     <GalleryView
-                      results={
-                        accumulatedResults.length > 0
-                          ? accumulatedResults
-                          : searchResults?.data || []
-                      }
+                      results={searchResults?.data || []}
                       isLoading={isLoading}
                       totalResults={searchTotalResults}
                       currentPage={page}
-                      startPage={
-                        accumulatedResults.length > 0
-                          ? accumulatedStartPage
-                          : page
-                      }
                       perPage={perPage}
-                      hasMore={page < totalPages}
-                      onLoadMore={() => handlePageChange(page + 1)}
                       searchId={searchId}
                     />
                   )}
@@ -921,14 +852,16 @@ function SearchContent({
                     </div>
                   )}
 
-                  {/* Pagination for List view (bottom of page) */}
-                  {!isLoading && totalPages > 1 && currentView === 'list' && (
-                    <Pagination
-                      currentPage={page}
-                      totalPages={totalPages}
-                      onPageChange={handlePageChange}
-                    />
-                  )}
+                  {/* Pagination for List and Gallery views (bottom of page) */}
+                  {!isLoading &&
+                    totalPages > 1 &&
+                    (currentView === 'list' || currentView === 'gallery') && (
+                      <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        onPageChange={handlePageChange}
+                      />
+                    )}
                 </>
               )}
             </div>
@@ -943,7 +876,10 @@ function SearchContent({
 export function SearchPage({ searchResults, isLoading }: SearchPageProps) {
   return (
     <MapProvider>
-      <SearchContent searchResults={searchResults} isLoading={isLoading ?? false} />
+      <SearchContent
+        searchResults={searchResults}
+        isLoading={isLoading ?? false}
+      />
     </MapProvider>
   );
 }
