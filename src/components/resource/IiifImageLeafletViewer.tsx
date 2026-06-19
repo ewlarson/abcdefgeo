@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import {
   fetchIiifImageInfo,
+  getIiifTileUrl,
+  IIIF_MIN_ZOOM,
   normalizeImageServiceId,
+  resizeIiifTileToNaturalSize,
 } from '../../utils/iiif';
 import { useI18n } from '../../hooks/useI18n';
 
@@ -30,25 +33,6 @@ type IiifTileLayerInstance = L.TileLayer & {
   maxNativeZoom: number;
   getTileUrl(coords: L.Coords): string;
 };
-
-type IiifTileCoords = Pick<L.Coords, 'x' | 'y' | 'z'>;
-
-type IiifTileUrlOptions = Pick<
-  IiifTileLayerOptions,
-  | 'imageApiVersion'
-  | 'imageHeight'
-  | 'imageWidth'
-  | 'serviceId'
-  | 'tileFormat'
-  | 'tileQuality'
-  | 'tileSize'
-> & {
-  coords: IiifTileCoords;
-  maxNativeZoom: number;
-};
-
-const EMPTY_TILE_URL =
-  'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
 
 function getImageApiVersion(info: IiifImageInfo): 2 | 3 {
   const context = info['@context'];
@@ -90,45 +74,9 @@ function getMaxNativeZoom(width: number, height: number, tileSize: number) {
   );
 }
 
-export function getIiifTileUrl(options: IiifTileUrlOptions): string {
-  const zoom = Math.max(0, Math.min(options.maxNativeZoom, options.coords.z));
-  const scale = Math.pow(2, options.maxNativeZoom - zoom);
-  const tileBaseSize = options.tileSize as number;
-  const sourceTileSize = tileBaseSize * scale;
-  const minX = options.coords.x * sourceTileSize;
-  const minY = options.coords.y * sourceTileSize;
-
-  if (
-    options.coords.x < 0 ||
-    options.coords.y < 0 ||
-    minX >= options.imageWidth ||
-    minY >= options.imageHeight
-  ) {
-    return EMPTY_TILE_URL;
-  }
-
-  const maxX = Math.min(minX + sourceTileSize, options.imageWidth);
-  const maxY = Math.min(minY + sourceTileSize, options.imageHeight);
-  const regionWidth = maxX - minX;
-  const regionHeight = maxY - minY;
-
-  if (regionWidth <= 0 || regionHeight <= 0) {
-    return EMPTY_TILE_URL;
-  }
-
-  const outputWidth = Math.ceil(regionWidth / scale);
-  const outputHeight = Math.ceil(regionHeight / scale);
-  const size =
-    options.imageApiVersion === 2
-      ? `${outputWidth},`
-      : `${outputWidth},${outputHeight}`;
-  const region = [minX, minY, regionWidth, regionHeight].join(',');
-  const baseUrl = options.serviceId.replace(/\/$/, '');
-
-  return `${baseUrl}/${region}/${size}/0/${options.tileQuality}.${options.tileFormat}`;
-}
-
-function buildIiifTileLayer(options: IiifTileLayerOptions): IiifTileLayerInstance {
+function buildIiifTileLayer(
+  options: IiifTileLayerOptions
+): IiifTileLayerInstance {
   const IiifTileLayer = L.TileLayer.extend({
     getTileUrl(this: IiifTileLayerInstance, coords: L.Coords) {
       return getIiifTileUrl({
@@ -151,6 +99,12 @@ function buildIiifTileLayer(options: IiifTileLayerOptions): IiifTileLayerInstanc
     updateWhenIdle: true,
   }) as IiifTileLayerInstance;
   layer.maxNativeZoom = options.maxNativeZoom ?? 0;
+  layer.on('tileload', ({ tile }) => {
+    resizeIiifTileToNaturalSize(
+      tile as HTMLImageElement,
+      options.tileSize as number
+    );
+  });
   return layer;
 }
 
@@ -205,7 +159,7 @@ export function IiifImageLeafletViewer({ endpoint }: { endpoint: string }) {
           maxBounds: imageBounds.pad(0.5),
           maxBoundsViscosity: 0.5,
           maxZoom: maxNativeZoom,
-          minZoom: 0,
+          minZoom: IIIF_MIN_ZOOM,
           preferCanvas: false,
           zoom: 0,
         });
@@ -216,7 +170,8 @@ export function IiifImageLeafletViewer({ endpoint }: { endpoint: string }) {
           imageWidth: width,
           maxNativeZoom,
           maxZoom: maxNativeZoom,
-          minZoom: 0,
+          minNativeZoom: 0,
+          minZoom: IIIF_MIN_ZOOM,
           serviceId: normalizeImageServiceId(endpoint, info),
           tileFormat: getTileFormat(info),
           tileQuality: 'default',
