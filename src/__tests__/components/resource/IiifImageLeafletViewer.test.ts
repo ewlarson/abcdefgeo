@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { getIiifTileUrl } from '../../../components/resource/IiifImageLeafletViewer';
+import {
+  getIiifTileUrl,
+  IIIF_MIN_ZOOM,
+  resizeIiifTileToNaturalSize,
+} from '../../../utils/iiif';
 
 const baseOptions = {
   imageApiVersion: 2 as const,
@@ -14,6 +18,10 @@ const baseOptions = {
 };
 
 describe('getIiifTileUrl', () => {
+  it('allows large CONTENTdm scans to fit by zooming out below native IIIF zoom 0', () => {
+    expect(IIIF_MIN_ZOOM).toBe(-5);
+  });
+
   it('generates IIIF region tile URLs for the initial zoom level', () => {
     expect(
       getIiifTileUrl({
@@ -36,6 +44,20 @@ describe('getIiifTileUrl', () => {
     );
   });
 
+  it('clamps display zooms below the native IIIF pyramid to zoom 0 tile requests', () => {
+    expect(
+      getIiifTileUrl({
+        ...baseOptions,
+        coords: { x: 0, y: 0, z: -2 },
+      })
+    ).toBe(
+      getIiifTileUrl({
+        ...baseOptions,
+        coords: { x: 0, y: 0, z: 0 },
+      })
+    );
+  });
+
   it('clips edge tiles to image dimensions', () => {
     expect(
       getIiifTileUrl({
@@ -54,5 +76,29 @@ describe('getIiifTileUrl', () => {
         coords: { x: 8, y: 0, z: 3 },
       })
     ).toMatch(/^data:image\/gif;base64,/);
+  });
+});
+
+describe('resizeIiifTileToNaturalSize', () => {
+  it('resizes non-square IIIF tiles to their natural image dimensions', () => {
+    const tile = document.createElement('img');
+    Object.defineProperty(tile, 'naturalWidth', { value: 552 });
+    Object.defineProperty(tile, 'naturalHeight', { value: 703 });
+
+    resizeIiifTileToNaturalSize(tile, 1024);
+
+    expect(tile.style.width).toBe('552px');
+    expect(tile.style.height).toBe('703px');
+  });
+
+  it('leaves full-size square IIIF tiles alone', () => {
+    const tile = document.createElement('img');
+    Object.defineProperty(tile, 'naturalWidth', { value: 1024 });
+    Object.defineProperty(tile, 'naturalHeight', { value: 1024 });
+
+    resizeIiifTileToNaturalSize(tile, 1024);
+
+    expect(tile.style.width).toBe('');
+    expect(tile.style.height).toBe('');
   });
 });

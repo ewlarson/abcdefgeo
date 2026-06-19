@@ -1,5 +1,28 @@
 type AnyJson = Record<string, unknown>;
 
+type IiifTileCoords = {
+  x: number;
+  y: number;
+  z: number;
+};
+
+export type IiifTileUrlOptions = {
+  coords: IiifTileCoords;
+  imageApiVersion: 2 | 3;
+  imageHeight: number;
+  imageWidth: number;
+  maxNativeZoom: number;
+  serviceId: string;
+  tileFormat: string;
+  tileQuality: string;
+  tileSize: number;
+};
+
+const EMPTY_IIIF_TILE_URL =
+  'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+
+export const IIIF_MIN_ZOOM = -5;
+
 function isString(value: unknown): value is string {
   return typeof value === 'string';
 }
@@ -107,6 +130,56 @@ export function buildPresentation3ManifestFromImageInfo(args: {
       },
     ],
   };
+}
+
+export function getIiifTileUrl(options: IiifTileUrlOptions): string {
+  const zoom = Math.max(0, Math.min(options.maxNativeZoom, options.coords.z));
+  const scale = Math.pow(2, options.maxNativeZoom - zoom);
+  const sourceTileSize = options.tileSize * scale;
+  const minX = options.coords.x * sourceTileSize;
+  const minY = options.coords.y * sourceTileSize;
+
+  if (
+    options.coords.x < 0 ||
+    options.coords.y < 0 ||
+    minX >= options.imageWidth ||
+    minY >= options.imageHeight
+  ) {
+    return EMPTY_IIIF_TILE_URL;
+  }
+
+  const maxX = Math.min(minX + sourceTileSize, options.imageWidth);
+  const maxY = Math.min(minY + sourceTileSize, options.imageHeight);
+  const regionWidth = maxX - minX;
+  const regionHeight = maxY - minY;
+
+  if (regionWidth <= 0 || regionHeight <= 0) {
+    return EMPTY_IIIF_TILE_URL;
+  }
+
+  const outputWidth = Math.ceil(regionWidth / scale);
+  const outputHeight = Math.ceil(regionHeight / scale);
+  const size =
+    options.imageApiVersion === 2
+      ? `${outputWidth},`
+      : `${outputWidth},${outputHeight}`;
+  const region = [minX, minY, regionWidth, regionHeight].join(',');
+  const baseUrl = options.serviceId.replace(/\/$/, '');
+
+  return `${baseUrl}/${region}/${size}/0/${options.tileQuality}.${options.tileFormat}`;
+}
+
+export function resizeIiifTileToNaturalSize(
+  tile: HTMLImageElement,
+  tileSize: number
+) {
+  const { naturalHeight, naturalWidth } = tile;
+
+  if (!naturalHeight || !naturalWidth) return;
+  if (naturalHeight === tileSize && naturalWidth === tileSize) return;
+
+  tile.style.width = `${naturalWidth}px`;
+  tile.style.height = `${naturalHeight}px`;
 }
 
 export async function fetchIiifImageInfo(
